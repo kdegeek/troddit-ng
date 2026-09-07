@@ -65,6 +65,24 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 To contribute create a branch and submit a PR!
 
+### Amp orbs
+
+`.agents/setup` installs Node 18.20.8 (matching Docker's Node 18 baseline),
+Yarn 1.22.19, and all dependencies from `yarn.lock`. Amp snapshots the installed
+toolchain and dependencies; exact snapshots skip setup, while refreshed snapshots
+reuse Yarn's cache and existing packages. `.agents/resume` does not reinstall anything.
+
+The toolchain is isolated from the orb's system Node and is available in login
+shells within this checkout. Setup copies `.env.example` to `.env.local` only when
+the latter is absent. No credentials are generated or authentication performed.
+Reddit login requires the credentials below; optional Clerk and Supabase features
+require their own credentials. Default development needs no local database.
+
+Run `yarn lint` or `yarn build` to check the project. To start a supervised preview,
+use `amp orb service start troddit --command 'yarn dev --hostname 0.0.0.0' --portal`
+and open the returned portal URL. Node 18 is end-of-life; this setup preserves the
+archived application's existing baseline rather than upgrading its runtime.
+
 ### Environment Variables
 
 To use login functionality the following environment variables need to be defined in a .env.local file placed in the root directory:
