@@ -377,7 +377,7 @@ const Thread = ({
     <>
       <div
         onClick={() => goBack(false, true)}
-        className={`flex flex-row flex-grow ${
+        className={`min-w-0 flex flex-row flex-grow ${
           usePortrait ? "pt-0.5" : "pt-3"
         } justify-center `}
       >
@@ -459,7 +459,7 @@ const Thread = ({
               : !usePortrait
               ? " w-full md:w-10/12 lg:w-3/4 "
               : " md:w-4/12 ") +
-            " z-10  md:flex md:flex-col md:items-center md:justify-start "
+            " min-w-0 z-10 md:flex md:flex-col md:items-center md:justify-start "
           }
         >
           {/* Content container */}
@@ -490,7 +490,7 @@ const Thread = ({
                     />
                   </div>
                   {/* Main Media Column */}
-                  <div className="w-full border-th-border2 md:border-l">
+                  <div className="min-w-0 w-full border-th-border2 md:border-l">
                     {/* Title etc*/}
                     <div className="flex flex-row items-start  pt-1.5 text-sm md:pl-3">
                       <div className="flex flex-row flex-wrap items-start group">

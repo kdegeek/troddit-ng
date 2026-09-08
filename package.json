@@ -13,6 +13,7 @@
   "dependencies": {
     "@clerk/nextjs": "^4.29.7",
     "@headlessui/react": "1.5",
+    "@openai/codex": "0.153.4",
     "@react-hook/resize-observer": "^1.2.5",
     "@react-hook/window-size": "^3.0.7",
     "@supabase/supabase-js": "^2.24.0",

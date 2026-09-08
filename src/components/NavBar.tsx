@@ -8,6 +8,7 @@ import {
   FiArrowUpRight,
   FiBookmark,
   FiCompass,
+  FiCpu,
   FiGrid,
   FiHash,
   FiHome,
@@ -86,6 +87,7 @@ export default function NavBar({ toggleSideNav = 0 }) {
     { label: "Home", href: "/", icon: FiHome },
     { label: "Discover", href: "/r/popular", icon: FiCompass },
     { label: session ? "Saved" : "Bookmarks", href: saved, icon: FiBookmark },
+    { label: "AI Studio", href: "/studio", icon: FiCpu },
   ];
   const communities = session
     ? (subs.mySubs ?? []).map((sub) => sub.data?.display_name).filter(Boolean)

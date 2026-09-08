@@ -261,7 +261,7 @@ const ChildComments = ({
         {/* Comment Body */}
         <div
           className={
-            "flex-grow mt-3 max-w-full   " +
+            "min-w-0 flex-grow mt-3 max-w-full " +
             (hideChildren && !context.collapseChildrenOnly && !portraitMode
               ? " md:pl-0 mb-3 "
               : hideChildren && !context.collapseChildrenOnly

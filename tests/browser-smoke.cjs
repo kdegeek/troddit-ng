@@ -99,7 +99,9 @@ try {
   );
   run("set", "viewport", "390", "844");
   evaluate("document.documentElement.style.setProperty('--safe-top','59px'); document.querySelector('.post-comments[href*=demo1]').scrollIntoView({block:'center'}); true");
-  run("wait", "500");
+  // Masonic disables pointer events while scrolling/repositioning after resize.
+  // Wait for hit testing, not a fixed delay that can click through the card.
+  wait("(() => { const link = document.querySelector('.post-comments[href*=demo1]'); const rect = link.getBoundingClientRect(); return link.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)); })()");
   run("find", "role", "link", "click", "--name", "43 comments", "--exact");
   wait("document.querySelector('.post-detail')");
   check(evaluate("document.querySelector('.post-detail').getBoundingClientRect().height === 844 && document.querySelector('.detail-back').getBoundingClientRect().top >= 59"), "Mobile thread fills the viewport and respects the notch");

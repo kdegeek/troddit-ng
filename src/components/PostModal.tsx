@@ -404,6 +404,71 @@ const PostModal = ({
     }
   };
 
+  // Article edge-back is separate from the media viewer's gallery gestures.
+  useEffect(() => {
+    const element = translateDiv.current;
+    if (!element || useMediaMode || windowWidth >= 768) return;
+    let start: { x: number; y: number } | undefined;
+    let distance = 0;
+    let dragging = false;
+    const reset = () => {
+      if (dragging) updateTranslateX(0);
+      start = undefined;
+      distance = 0;
+      dragging = false;
+    };
+    const onStart = (event: TouchEvent) => {
+      reset();
+      const touch = event.touches[0];
+      if (
+        event.touches.length !== 1 ||
+        touch.clientX > 28 ||
+        (window.visualViewport?.scale ?? 1) !== 1 ||
+        window.getSelection()?.toString() ||
+        (event.target as Element).closest(
+          'input, textarea, select, button, a, video, iframe, pre, table, [contenteditable="true"], [role="slider"]',
+        )
+      )
+        return;
+      start = { x: touch.clientX, y: touch.clientY };
+    };
+    const onMove = (event: TouchEvent) => {
+      if (!start) return;
+      if (event.touches.length !== 1) return reset();
+      const dx = event.touches[0].clientX - start.x;
+      const dy = event.touches[0].clientY - start.y;
+      if (!dragging) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return;
+        if (dx < 10 || dx < Math.abs(dy) * 1.5) return reset();
+        dragging = true;
+      }
+      if (!event.cancelable) return reset();
+      event.preventDefault();
+      distance = Math.max(0, dx);
+      updateTranslateX(distance, false);
+    };
+    const onEnd = () => {
+      const dismiss = dragging && distance >= Math.min(120, windowWidth * 0.28);
+      reset();
+      if (dismiss)
+        handleBack(
+          !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+          true,
+        );
+    };
+    element.addEventListener("touchstart", onStart, { passive: true });
+    element.addEventListener("touchmove", onMove, { passive: false });
+    element.addEventListener("touchend", onEnd);
+    element.addEventListener("touchcancel", reset);
+    return () => {
+      reset();
+      element.removeEventListener("touchstart", onStart);
+      element.removeEventListener("touchmove", onMove);
+      element.removeEventListener("touchend", onEnd);
+      element.removeEventListener("touchcancel", reset);
+    };
+  });
+
   return (
     <div
       ref={dialogRef}

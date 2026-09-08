@@ -51,6 +51,26 @@
   padding-right: var(--safe-right);
   padding-bottom: var(--safe-bottom);
 }
+/* Size rich text against its column, not the viewport (especially replies). */
+.post-detail .reading-body {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.post-detail .reading-body pre,
+.post-detail .reading-body table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.post-detail .reading-body img,
+.post-detail .reading-body video,
+.post-detail .reading-body iframe {
+  max-width: 100%;
+}
 .back-to-top {
   bottom: calc(28px + var(--safe-bottom));
 }
@@ -83,6 +103,19 @@
   .post-detail {
     height: var(--visual-height, 100dvh);
     padding-top: calc(48px + var(--safe-top)) !important;
+  }
+  .post-detail > div {
+    padding-left: max(12px, var(--safe-left));
+    padding-right: max(12px, var(--safe-right));
+  }
+  .post-detail::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto;
+    height: calc(48px + var(--safe-top));
+    background: var(--background);
+    z-index: 30;
+    pointer-events: none;
   }
   .detail-back {
     top: calc(7px + var(--safe-top)) !important;

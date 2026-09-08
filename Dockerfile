@@ -39,6 +39,11 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Private OAuth worker; pin protocol and binary together. Never bake credentials in.
+RUN npm install --global @openai/codex@0.153.4 && npm cache clean --force
+ENV TRODDIT_CODEX_HOME=/var/lib/troddit-codex
+RUN mkdir -p /var/lib/troddit-codex && chown nextjs:nodejs /var/lib/troddit-codex && chmod 700 /var/lib/troddit-codex
+
 # You only need to copy next.config.js if you are NOT using the default configuration
 COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/public ./public

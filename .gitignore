@@ -53,3 +53,6 @@ yarn-error.log*
 
 # Orb portal metadata
 .amp/portals/*
+
+# Private Codex OAuth credentials and runtime state
+.troddit-ai/

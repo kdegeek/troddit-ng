@@ -190,6 +190,13 @@ This will create the troddit image and pull in the necessary dependencies. To ru
 docker run --env-file .env.local -p 3000:3000 troddit
 ```
 
+### AI Studio (optional)
+
+Digests, community suggestions, and interesting stories have a dedicated mobile
+tab and desktop section. Uses your Codex/ChatGPT OAuth subscription only, with
+source previews, owner access, and no API-key fallback. See [AI.md](AI.md) for
+setup, Docker credential persistence, privacy boundaries, and limitations.
+
 ### Support
 
 If you like the project feel free to share and leave a star. If you're feeling generous you can support me on Ko-fi.

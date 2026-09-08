@@ -9,3 +9,4 @@ README.md
 .env
 .env.*
 !.env.example
+.troddit-ai
