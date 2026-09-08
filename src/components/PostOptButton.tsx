@@ -17,6 +17,7 @@ import Checkbox from "./ui/Checkbox";
 import SubButton from "./SubButton";
 import { HiOutlineDocumentDuplicate } from "react-icons/hi";
 import { useRouter } from "next/router";
+import { useSession } from "next-auth/react";
 
 const MyLink = (props) => {
   let { href, children, ...rest } = props;
@@ -43,6 +44,7 @@ const PostOptButton = ({
   buttonStyles = "",
 }: Props) => {
   const router = useRouter();
+  const { data: session } = useSession();
   const context: any = useMainContext();
   const { addSubFilter, addUserFilter } = useFilterSubs();
   const filterMenuRef = useRef<HTMLButtonElement>(null);
@@ -319,6 +321,7 @@ const PostOptButton = ({
                         <SaveButton
                           id={post?.name}
                           saved={post?.saved}
+                          item={{ id: post.name, title: post.title, permalink: post.permalink, subreddit: post.subreddit, author: post.author }}
                           isPortrait={false}
                           menu={true}
                         ></SaveButton>
@@ -326,6 +329,9 @@ const PostOptButton = ({
                     )}
                   </Menu.Item>
                 )}
+                {session && <Menu.Item>{({ active }) => <div className={active ? "bg-th-highlight" : ""}>
+                  <SaveButton id={post.name} localOnly menu item={{ id: post.name, title: post.title, permalink: post.permalink, subreddit: post.subreddit, author: post.author }} />
+                </div>}</Menu.Item>}
                 {true && (
                   <Menu.Item>
                     {({ active }) => (

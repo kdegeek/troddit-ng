@@ -37,7 +37,7 @@ const useThread = (permalink, sort, initialData?, withContext = false) => {
           prevState.set(comment?.data?.name, comment);
           for (
             let i = 0;
-            i < comment?.data?.replies?.data?.children?.length ?? 0;
+            i < (comment?.data?.replies?.data?.children?.length ?? 0);
             i++
           ) {
             checkCommentChildren(comment.data.replies.data.children[i]);

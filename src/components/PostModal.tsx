@@ -34,6 +34,12 @@ const PostModal = ({
 }) => {
   const router = useRouter();
   const context: any = useMainContext();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement;
+    dialogRef.current?.focus({ preventScroll: true });
+    return () => previousFocus?.focus({ preventScroll: true });
+  }, []);
   const { getFeedData, setFeedData } = useFeedGallery();
   // const [flattenedPosts, setFlattenedPosts] = useState(
   //   () => getFeedData() as any[]
@@ -41,7 +47,7 @@ const PostModal = ({
   const [autoPlay, setAutoPlay] = useState(false);
   const [useMediaMode, setUseMediaMode] = useState(mediaMode);
   const [sort, setSort] = useState<string>(
-    (router?.query?.sort as string) ?? context.defaultSortComments
+    (router?.query?.sort as string) ?? context.defaultSortComments,
   );
   const [curPost, setCurPost] = useState<any>(postData);
   const [curPostNum, setCurPostNum] = useState(postNum);
@@ -68,7 +74,7 @@ const PostModal = ({
         router.asPath.includes("/duplicates/")
           ? router.asPath.replace("/duplicates/", "/comments/")
           : "",
-        { shallow: true }
+        { shallow: true },
       );
     }
   };
@@ -116,7 +122,7 @@ const PostModal = ({
     } else {
       document.documentElement.style.setProperty(
         "--overflow",
-        "hidden visible"
+        "hidden visible",
       );
       document.body.style.width = `auto`;
     }
@@ -124,7 +130,7 @@ const PostModal = ({
     return () => {
       document.documentElement.style.setProperty(
         "--overflow",
-        "hidden visible"
+        "hidden visible",
       );
       document.body.style.width = `auto`;
     };
@@ -167,7 +173,7 @@ const PostModal = ({
             router.back();
           }
         },
-        animation ? 200 : 0
+        animation ? 200 : 0,
       );
     }
   };
@@ -197,11 +203,11 @@ const PostModal = ({
         router.query?.frontsort
           ? `${nextPost?.id}${mediaMode ? "?mode=media" : ""}`
           : router.route === "/u/[...slug]"
-          ? `/u/${router?.query?.slug?.[0]}${nextPost?.permalink}${queryParams}`
-          : `${nextPost.permalink}${queryParams}`,
+            ? `/u/${router?.query?.slug?.[0]}${nextPost?.permalink}${queryParams}`
+            : `${nextPost.permalink}${queryParams}`,
         {
           shallow: true,
-        }
+        },
       );
       setCurPostNum((p) => p + move);
     }
@@ -231,11 +237,11 @@ const PostModal = ({
           router.query?.frontsort
             ? `${nextPost?.id}${mediaMode ? "?mode=media" : ""}`
             : router.route === "/u/[...slug]"
-            ? `/u/${router?.query?.slug?.[0]}${nextPost?.permalink}${queryParams}`
-            : `${nextPost.permalink}${queryParams}`,
+              ? `/u/${router?.query?.slug?.[0]}${nextPost?.permalink}${queryParams}`
+              : `${nextPost.permalink}${queryParams}`,
           {
             shallow: true,
-          }
+          },
         );
       }
       currNum = currNum + move;
@@ -296,27 +302,35 @@ const PostModal = ({
             feedData?.[currNum]?.data?.mediaInfo?.videoInfo?.[0]?.duration
           ) {
             pause = true;
-            setTimeout(() => {
-              hasNextPost && changePostInterval(1, currNum, feedData);
-              pause = false;
-              // pause = false;
-            }, feedData?.[currNum]?.data?.mediaInfo?.videoInfo?.[0]?.duration * 1000 + 500);
+            setTimeout(
+              () => {
+                hasNextPost && changePostInterval(1, currNum, feedData);
+                pause = false;
+                // pause = false;
+              },
+              feedData?.[currNum]?.data?.mediaInfo?.videoInfo?.[0]?.duration *
+                1000 +
+                500,
+            );
           } else {
             setTimeout(
               () => {
                 hasNextPost && changePostInterval(1, currNum, feedData);
               },
-              isVideo ? (context?.autoPlayInterval ?? 10) * 1000 : 0
+              isVideo ? (context?.autoPlayInterval ?? 10) * 1000 : 0,
             );
           }
         }
       };
 
       getFeedData()?.[currNum]?.data?.mediaInfo?.isVideo && attemptNextPost();
-      interval = setInterval(() => {
-        //console.log("attempt next");
-        attemptNextPost();
-      }, (context?.autoPlayInterval ?? 10) * 1000);
+      interval = setInterval(
+        () => {
+          //console.log("attempt next");
+          attemptNextPost();
+        },
+        (context?.autoPlayInterval ?? 10) * 1000,
+      );
     } else {
       context.setAutoPlayMode(false);
     }
@@ -338,7 +352,6 @@ const PostModal = ({
   const backPress = useKeyPress("ArrowLeft");
   const upPress = useKeyPress("ArrowUp");
   const downPress = useKeyPress("ArrowDown");
-  const escapePress = useKeyPress("Escape");
   const pPress = useKeyPress("p");
   const fPress = useKeyPress("f");
 
@@ -352,8 +365,6 @@ const PostModal = ({
         changePost(-1);
       } else if (useMediaMode && downPress) {
         changePost(1);
-      } else if (escapePress) {
-        handleBack();
       } else if (pPress && useMediaMode) {
         setAutoPlay((a) => !a);
       } else if (fPress) {
@@ -369,7 +380,6 @@ const PostModal = ({
     backPress,
     upPress,
     downPress,
-    escapePress,
     context.replyFocus,
   ]);
 
@@ -389,18 +399,55 @@ const PostModal = ({
       // console.log(translateDiv.current.style.transform.split(",")?.[0]?.split("px")?.[0]?.split("translate3d(")?.[1] ?? "0")
       translateDiv.current.style.setProperty(
         "transform",
-        `translate3d(${x}px, 0px, 0px)`
+        `translate3d(${x}px, 0px, 0px)`,
       );
     }
   };
 
   return (
-    <>
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
+      aria-label={curPost?.title ?? "Post and comments"}
+      className="relative z-[70]"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          handleBack();
+        }
+        if (event.key !== "Tab") return;
+        const controls = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>(
+            'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex="0"]',
+          ) ?? [],
+        ).filter((element) => element.getClientRects().length);
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (!first) {
+          event.preventDefault();
+          return;
+        }
+        if (
+          event.shiftKey &&
+          (document.activeElement === first ||
+            document.activeElement === dialogRef.current)
+        ) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }}
+    >
       <div
         ref={translateDiv}
         className={
           "fixed inset-0 z-30 w-screen min-w-full min-h-screen overscroll-y-contain bg-black/75 backdrop-filter " +
-          (!useMediaMode ? " overflow-y-auto top-12 pb-12" : " ") // scrollbar-thin scrollbar-thumb-th-scrollbar scrollbar-track-transparent scrollbar-thumb-rounded-full scrollbar-track-rounded-full
+          (!useMediaMode ? " post-detail overflow-y-auto top-12 pb-12" : " ") // scrollbar-thin scrollbar-thumb-th-scrollbar scrollbar-track-transparent scrollbar-thumb-rounded-full scrollbar-track-rounded-full
         }
       >
         {useMediaMode ? (
@@ -486,7 +533,7 @@ const PostModal = ({
                 (showUI && !hideArrows
                   ? " opacity-100 "
                   : " opacity-0 hover:opacity-100")
-              : " md:top-16 md:left-4 right-1.5 bottom-[2.5rem] text-white  ")
+              : " detail-back md:top-16 md:left-4 right-1.5 bottom-[2.5rem] text-white  ")
           }
         >
           <RiArrowGoBackLine
@@ -590,7 +637,7 @@ const PostModal = ({
           </button>
         )}
       </>
-    </>
+    </div>
   );
 };
 

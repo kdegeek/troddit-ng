@@ -1,6 +1,8 @@
 {
-  "name": "troddit · a web app for Reddit",
-  "short_name": "troddit",
+  "id": "/",
+  "name": "Troddit — a web app for Reddit",
+  "short_name": "Troddit",
+  "description": "Browse Reddit with flexible columns, galleries, and responsive views.",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -14,9 +16,22 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#384659",
-  "background_color": "#384659",
+  "theme_color": "#287453",
+  "background_color": "#f6f7f4",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "orientation": "portrait"
+  "orientation": "any",
+  "shortcuts": [
+    {
+      "name": "Popular",
+      "short_name": "Popular",
+      "url": "/r/popular"
+    },
+    {
+      "name": "All",
+      "short_name": "All",
+      "url": "/r/all"
+    }
+  ]
 }

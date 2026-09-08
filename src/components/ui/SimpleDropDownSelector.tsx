@@ -57,9 +57,9 @@ const SimpleDropDownSelector = ({
                   }}
                 >
                   <span className="flex flex-row items-center justify-center h-6 capitalize">
-                    {(items[key] as { [x: string]: { name?: string } })?.name ??
-                      items[key] ??
-                      key}
+                    {typeof items[key] === "string"
+                      ? items[key]
+                      : items[key]?.name ?? key}
                   </span>
                 </div>
               )}

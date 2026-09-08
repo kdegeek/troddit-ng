@@ -13,37 +13,7 @@ const FilterMenu = ({ hide = false }) => {
   const feedData = queryClient.getQueryData(key) as any;
   const [openFilter, setOpenFilter] = useState(0);
   const [filterCount, setFilterCount] = useState<number>(0);
-  const [active, setActive] = useState(false);
-  const [deg, setDeg] = useState(0);
-  const [degIntervalID, setDegIntervalID] = useState<any>();
-  useEffect(() => {
-    if (context.filtersApplied > 0) {
-      setActive(true);
-    } else {
-      setActive(false);
-    }
-    return () => {
-      setActive(false);
-    };
-  }, [context.filtersApplied]);
-
-  useEffect(() => {
-    if (active) {
-      let updateDeg = () => {
-        setDeg((d) => (d += 4));
-      };
-
-      setDegIntervalID((id) => {
-        clearInterval(id);
-        return setInterval(updateDeg, 10);
-      });
-    } else {
-      clearInterval(degIntervalID);
-    }
-    return () => {
-      clearInterval(degIntervalID);
-    };
-  }, [active]);
+  const active = context.filtersApplied > 0;
 
   useEffect(() => {
     let count = 0;
@@ -61,6 +31,7 @@ const FilterMenu = ({ hide = false }) => {
       <FilterModal toOpen={openFilter} />
       <button
         aria-label="filters"
+        aria-pressed={active}
         title={"filters"}
         className={
           "relative flex flex-col items-center flex-grow w-full h-full select-none"
@@ -83,7 +54,7 @@ const FilterMenu = ({ hide = false }) => {
           className={
             "flex flex-row items-center justify-center w-full h-full  rounded-md  bg-th-background2 focus:outline-none" +
             (active
-              ? " z-10 scale-90"
+              ? " border border-th-borderHighlight text-th-textStrong"
               : " border border-transparent hover:border-th-border")
           }
         >
@@ -91,14 +62,6 @@ const FilterMenu = ({ hide = false }) => {
             className={"flex-none z-50 " + (active ? " w-6 h-6 " : " w-5 h-5 ")}
           />
         </div>
-        {active && (
-          <div
-            className="absolute z-0 w-full h-full rounded-md"
-            style={{
-              backgroundImage: `linear-gradient(${deg}deg, var(--accent), rgb(255, 255, 255))`,
-            }}
-          ></div>
-        )}
       </button>
     </>
   );

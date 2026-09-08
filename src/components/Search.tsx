@@ -18,6 +18,11 @@ import {
 import { useCollectionContext } from "./collections/CollectionContext";
 import Checkbox from "./ui/Checkbox";
 import ItemsList from "./search/ItemsList";
+import {
+  addSearchHistory,
+  clearSearchHistory,
+  readSearchHistory,
+} from "../../lib/search-history";
 
 const Search = ({ id, setShowSearch = (a) => {} }) => {
   const { isLoaded, premium } = useTAuth();
@@ -36,10 +41,28 @@ const Search = ({ id, setShowSearch = (a) => {} }) => {
   const [srRestrict, setSrRestrict] = useState(false);
   const [currSub, setCurrSub] = useState<string | undefined>("");
   const [addMode, setAddMode] = useState("");
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [searchFocused, setSearchFocused] = useState(false);
   // const plausible = usePlausible();
 
   const myCollections: any = useCollectionContext();
   const { toggleSelected, selected } = myCollections;
+
+  useEffect(() => {
+    setRecentSearches(readSearchHistory(window.localStorage));
+  }, []);
+
+  const submitSearch = (query: string) => {
+    setRecentSearches(addSearchHistory(query, window.localStorage));
+    setValue("");
+    setSearchFocused(false);
+    setShowSearch(false);
+    router.push(
+      srRestrict && currSub
+        ? `/r/${currSub}/search?sort=relevance&t=all&q=${encodeURIComponent(query)}`
+        : `/search?q=${encodeURIComponent(query)}&sort=relevance&t=all`
+    );
+  };
 
   useEffect(() => {
     //console.log("f", updated);
@@ -371,7 +394,7 @@ const Search = ({ id, setShowSearch = (a) => {} }) => {
             </div>
             {addMode && (
               <div
-                title={`add r/${suggestion?.data?.display_name} to current feed`}
+                title={`Add r/${suggestion?.data?.display_name} to the selected collection`}
                 className="flex flex-row items-center ml-auto space-x-2 group"
                 onClick={(e) => addSub(e, suggestion?.data?.display_name)}
               >
@@ -471,13 +494,7 @@ const Search = ({ id, setShowSearch = (a) => {} }) => {
     //   }
     // } else
     if (suggestion?.kind === "search") {
-      if (srRestrict && currSub !== "") {
-        router.push(
-          `/r/${currSub}/search?sort=relevance&t=all&q=${suggestion?.data?.q}`
-        );
-      } else {
-        router.push(`/search?q=${suggestion?.data?.q}&sort=relevance&t=all`);
-      }
+      submitSearch(suggestion?.data?.q);
     } else if (suggestion?.kind === "loading") {
       router.push(`/r/${suggestion?.data?.display_name}`);
     } else if (suggestion?.kind === "t5") {
@@ -507,20 +524,21 @@ const Search = ({ id, setShowSearch = (a) => {} }) => {
     onChange: onChange,
     onFocus: () => {
       context.setReplyFocus(true);
+      setSearchFocused(true);
       if (router?.query?.q) {
         setValue(router?.query?.q?.toString());
       }
     },
-    onBlur: () => {
+    onBlur: (event) => {
       context.setReplyFocus(false);
-      setShowSearch(false);
+      if (!event.currentTarget.closest(".search-field")?.contains(event.relatedTarget)) setSearchFocused(false);
     },
     type: "search",
     autoFocus: true,
   };
 
   return (
-    <div className="flex flex-row w-full h-full">
+    <div className="search-field relative flex flex-row w-full h-full">
       <Autosuggest
         id={id}
         suggestions={suggestions}
@@ -542,6 +560,34 @@ const Search = ({ id, setShowSearch = (a) => {} }) => {
         highlightFirstSuggestion={true}
         onSuggestionSelected={onSuggestionSelected}
       />
+      {searchFocused && !value && recentSearches.length > 0 && (
+        <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-th-border bg-th-post shadow-xl">
+          <div className="flex items-center justify-between border-b border-th-border px-3 py-2 text-xs text-th-textLight">
+            <span>Recent searches</span>
+            <button
+              className="hover:text-th-text"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                clearSearchHistory(window.localStorage);
+                setRecentSearches([]);
+              }}
+            >
+              Clear
+            </button>
+          </div>
+          {recentSearches.map((search) => (
+            <button
+              key={search}
+              className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-th-highlight"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => submitSearch(search)}
+            >
+              <AiOutlineSearch className="flex-none" />
+              <span className="truncate">{search}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

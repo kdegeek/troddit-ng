@@ -100,7 +100,7 @@ const Sort = ({ query }) => {
   }, [query, session, loading]);
 
   return (
-    <div className="-mt-2 overflow-x-hidden overflow-y-auto">
+    <div className="-mt-2 overflow-x-clip">
       <Head>
         <title>
           {query?.slug?.[0] ? `troddit · ${query?.slug?.[0]}` : "troddit"}
@@ -108,14 +108,14 @@ const Sort = ({ query }) => {
       </Head>
       <main className="">
         {forbidden ? (
-          <div className="flex items-center justify-center w-screen h-screen">
+          <div className="flex items-center justify-center w-full min-h-[60vh]">
             Access Forbidden
           </div>
         ) : (
           loaded && (
             <div className="">
               {true ? (
-                <div className="w-screen">
+                <div className="w-full">
                   <SubredditBanner
                     subreddits={[`u_${query?.slug?.[0]}`]}
                     userMode={true}

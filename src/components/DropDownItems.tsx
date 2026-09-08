@@ -13,6 +13,7 @@ import DropdownItem from "./DropdownItem";
 import DropdownSubCard from "./DropdownSubCard";
 import { useTAuth } from "../PremiumAuthContext";
 import { useMainContext } from "../MainContext";
+import { constructMultiLink } from "../../lib/navigation";
 
 const MyLink = (props) => {
   let { href, children, ...rest } = props;
@@ -79,12 +80,6 @@ const DropDownItems = ({ show, hideExtra = false }) => {
       setMyLocalFollows(follows);
     }
   }, [myLocalSubs]);
-
-  const constructMultiLink = (multi) => {
-    let subs = [] as any[];
-    multi?.data?.subreddits?.forEach((s: any) => subs.push(s?.name));
-    return `/r/${subs.join("+")}?m=${multi?.data?.name}`;
-  };
 
   const favoriteSubs = useMemo(() => {
     if (session?.user?.name) {

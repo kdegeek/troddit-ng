@@ -46,8 +46,17 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
   // const { data: session, status } = useSession();
   const context: any = useMainContext();
   const containerRef = React.useRef(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(([entry]) =>
+      setContainerWidth(entry.contentRect.width),
+    );
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
   const [windowWidth, windowHeight] = useWindowSize();
-  const { flatPosts } = useFeedPosts({
+  const { flatPosts, newPostsCount, applyNewPosts } = useFeedPosts({
     feed,
     askToUpdateFeed: context.askToUpdateFeed,
     setKey: setMasonicKey,
@@ -63,25 +72,26 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
   const { offset, width } = useContainerPosition(containerRef, [
     windowWidth,
     windowHeight,
+    containerWidth,
   ]);
   const gutter =
     context.cardStyle === "row1"
-      ? 0
+      ? 10
       : cols === 1
-      ? 8
-      : cols && cols > 1 && windowWidth < 640 //sm
-      ? cols === 2
-        ? 8
-        : 0
-      : cols && cols > 3 && windowWidth < 1280 //xl
-      ? 4
-      : cols && cols > 3 && windowWidth > 1280 //xl
-      ? 8
-      : 8;
+        ? 18
+        : cols && cols > 1 && windowWidth < 640 //sm
+          ? cols === 2
+            ? 8
+            : 0
+          : cols && cols > 3 && windowWidth < 1280 //xl
+            ? 4
+            : cols && cols > 3 && windowWidth > 1280 //xl
+              ? 8
+              : 8;
   const colWidth =
     context.cardStyle === "row1"
       ? width
-      : (width - (cols ?? 0 > 1 ? gutter * (cols ? cols : 1) : 0)) /
+      : (width - ((cols ?? 0) > 1 ? gutter * ((cols ?? 1) - 1) : 0)) /
         (cols ? cols : 1);
   const positioner = usePositioner({
     width,
@@ -109,7 +119,7 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
     },
     {
       isItemLoaded: (index, items) => !!items[index],
-    }
+    },
   );
 
   const [lastRoute, setLastRoute] = useState("");
@@ -127,21 +137,23 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
     if (context.cardStyle === "row1") {
       setCols(1);
     } else if (context?.columnOverride !== 0) {
-      setCols(context.columnOverride);
-    } else if (windowWidth > 1920) {
+      setCols(
+        Math.min(context.columnOverride, Math.max(1, Math.floor(width / 280))),
+      );
+    } else if (width > 1700) {
       setCols(5);
-    } else if (windowWidth > 1400) {
+    } else if (width > 1200) {
       setCols(4);
-    } else if (windowWidth > 1000) {
+    } else if (width > 850) {
       setCols(3);
-    } else if (windowWidth > 767) {
+    } else if (width > 550) {
       setCols(2);
     } else {
       setCols(1);
     }
 
     return () => {};
-  }, [windowWidth, context.columnOverride, context.cardStyle]);
+  }, [width, context.columnOverride, context.cardStyle]);
   useEffect(() => {
     context.setColumns(cols);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -157,7 +169,7 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
   }, [router.asPath]);
 
   const { getGlobalData, setGlobalData } = useGlobalState(
-    curKey?.length > 1 ? ["lastScrollTop", curKey] : [""]
+    curKey?.length > 1 ? ["lastScrollTop", curKey] : [""],
   );
 
   const postClick = (a, b) => {
@@ -173,7 +185,7 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
         const lastPostScroll = g?.get("lastScroll");
         const lastPost = lastPostClick ?? lastPostScroll;
         const lastPostIndex = flatPosts.findIndex(
-          (p) => lastPost && p?.data?.name === lastPost
+          (p) => lastPost && p?.data?.name === lastPost,
         );
         setScrolled(lastPostIndex);
         if (lastPostIndex > 0) {
@@ -205,7 +217,7 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
       //console.log("setheight?", height);
       height && setHeight(postName, { height: height });
     },
-    [setHeight]
+    [setHeight],
   );
 
   const handleIntersectChange = useCallback(
@@ -218,14 +230,13 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
       ) {
         setGlobalData("lastScroll", post?.name);
         setGlobalData("lastClick", undefined);
-        if(context?.autoSeen){
+        if (context?.autoSeen) {
           localSeen.setItem(post?.name, { time: new Date() });
-        } 
-          
+        }
       }
       //context.cardStyle === "row1" && setGlobalData("lastTop", window.scrollY);
     },
-    []
+    [],
   );
 
   const RenderCard = useCallback(
@@ -268,18 +279,18 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
           ? (mediaWidth / post?.mediaInfo?.dimensions?.[0]) *
               post?.mediaInfo?.dimensions?.[1]
           : 0,
-        maxHeight
+        maxHeight,
       );
 
       if (post?.data?.mediaInfo?.isGallery) {
         const { tallest, widest, ratio, fImages } = findGreatestsImages(
           post.data.mediaInfo.gallery,
-          cols === 1 ? windowHeightToUse * 0.75 : windowHeightToUse * 1
+          cols === 1 ? windowHeightToUse * 0.75 : windowHeightToUse * 1,
         );
         if (cols === 1) {
           mediaHeight = Math.min(
             windowHeightToUse * 0.75,
-            ratio?.height * (width / ratio?.width)
+            ratio?.height * (width / ratio?.width),
           );
         } else {
           mediaHeight = tallest?.height * (width / widest?.width);
@@ -326,16 +337,18 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
                       height: `${(mediaWidth * 16) / 9}px`,
                     }
                   : knownHeight && context.cardStyle !== "row1"
-                  ? {
-                      minHeight: `${knownHeight}px`,
-                    }
-                  : mediaHeight > 0 && context.cardStyle !== "row1" && !linkMode
-                  ? {
-                      minHeight: `${mediaHeight}px`,
-                    }
-                  : {
-                      minHeight: `${80}px`,
-                    }
+                    ? {
+                        minHeight: `${knownHeight}px`,
+                      }
+                    : mediaHeight > 0 &&
+                        context.cardStyle !== "row1" &&
+                        !linkMode
+                      ? {
+                          minHeight: `${mediaHeight}px`,
+                        }
+                      : {
+                          minHeight: `${80}px`,
+                        }
               }
             >
               <Post
@@ -368,7 +381,7 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
       context?.compactLinkPics,
       context.disableEmbeds,
       context.embedsEverywhere,
-    ]
+    ],
   );
 
   const feedLoading =
@@ -379,7 +392,8 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
       {!feed.isFetching &&
         !feed.hasNextPage &&
         feed.isFetched &&
-        !feed.error && flatPosts?.length > 0 && (
+        !feed.error &&
+        flatPosts?.length > 0 && (
           <div className="flex flex-row items-center justify-center my-6 text-sm font-light">
             <p>
               Loaded {flatPosts?.length} post
@@ -394,6 +408,9 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
 
   return (
     <>
+      {newPostsCount > 0 && context.askToUpdateFeed && <button className="feed-update" onClick={() => { applyNewPosts(); window.scrollTo({ top: 0 }); }}>
+        {newPostsCount} new {newPostsCount === 1 ? "post" : "posts"} · Update feed
+      </button>}
       {selectedPost && (
         <PostModal
           permalink={selectedPost?.data?.permalink}
@@ -409,14 +426,18 @@ const FeedMasonry = ({ initItems, feed, curKey }: MyMasonicProps) => {
           commentsDirect={selectedPost?.nav?.toComments}
           mediaMode={selectedPost?.nav?.toMedia}
           curKey={curKey}
-          fetchMore={feed.fetchNextPage}
+          fetchMore={
+            feed.hasNextPage && !feed.isFetchingNextPage
+              ? feed.fetchNextPage
+              : undefined
+          }
           feedLoading={feed.isFetchingNextPage}
           flattenedPosts={flatPosts}
         />
       )}
-      <div className={"min-h-screen w-full"}>
+      <div className={flatPosts.length ? "min-h-screen w-full" : "w-full"}>
         <MasonryScroller
-          itemKey={(data, index) => {
+          itemKey={(data: { data?: { name?: string } }, index) => {
             return data?.data?.name ?? index;
           }}
           key={masonicKey}

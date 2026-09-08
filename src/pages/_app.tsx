@@ -1,4 +1,6 @@
 import "../../styles/globals.css";
+import "../../styles/refresh.css";
+import "../../styles/settings.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
@@ -26,9 +28,14 @@ import ToastCustom from "../components/toast/ToastCustom";
 import { usePlausible } from "next-plausible";
 import PremiumModal from "../components/PremiumModal";
 import RateLimitModal from "../components/RateLimitModal";
+import PwaStatus from "../components/PwaStatus";
+import LoginModal from "../components/LoginModal";
+import AppearanceProvider from "../components/AppearanceProvider";
+import { PALETTES } from "../../lib/appearance";
+import "../../styles/polish.css";
 
 const NO_AUTH_FREE_ACCESS = JSON.parse(
-  process?.env?.NEXT_PUBLIC_FREE_ACCESS ?? "true"
+  process?.env?.NEXT_PUBLIC_FREE_ACCESS ?? "true",
 );
 
 const VERSION = packageInfo.version;
@@ -37,22 +44,30 @@ const queryClient = new QueryClient();
 const App = ({ Component, pageProps }) => {
   return (
     <SessionProvider session={pageProps.session}>
-      <ThemeProvider defaultTheme="system">
-        <MainProvider>
-          <MySubsProvider>
-            <MyCollectionsProvider>
-              <QueryClientProvider client={queryClient}>
-                <NavBar />
-                <Component {...pageProps} />
-                <PremiumModal />
-                <RateLimitModal />
-                <Toaster position="bottom-center" />
-                <Analytics />
-                <ReactQueryDevtools initialIsOpen={false} />
-              </QueryClientProvider>
-            </MyCollectionsProvider>
-          </MySubsProvider>
-        </MainProvider>
+      <ThemeProvider defaultTheme="system" themes={Object.keys(PALETTES)}>
+        <AppearanceProvider>
+          <MainProvider>
+            <MySubsProvider>
+              <MyCollectionsProvider>
+                <QueryClientProvider client={queryClient}>
+                  <NavBar />
+                  <div id="app-content" className="app-content" tabIndex={-1}>
+                    <Component {...pageProps} />
+                    <PwaStatus />
+                  </div>
+                  <LoginModal />
+                  <PremiumModal />
+                  <RateLimitModal />
+                  <Toaster position="bottom-center" />
+                  {process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === "true" && (
+                    <Analytics />
+                  )}
+                  <ReactQueryDevtools initialIsOpen={false} />
+                </QueryClientProvider>
+              </MyCollectionsProvider>
+            </MySubsProvider>
+          </MainProvider>
+        </AppearanceProvider>
       </ThemeProvider>
     </SessionProvider>
   );
@@ -82,9 +97,16 @@ function MyApp({ Component, pageProps }) {
   }, []);
   return (
     <>
-      <Script defer data-domain={"troddit.com"} src="/js/script.js"></Script>
+      {process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === "true" && (
+        <Script
+          defer
+          data-domain={process.env.NEXT_PUBLIC_ANALYTICS_DOMAIN}
+          src="/js/script.js"
+        />
+      )}
 
       <Head>
+        <title>Troddit — your space to explore</title>
         <meta
           name="viewport"
           content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, viewport-fit=cover" //user-scalable="no"

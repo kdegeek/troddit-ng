@@ -67,7 +67,7 @@ To contribute create a branch and submit a PR!
 
 ### Amp orbs
 
-`.agents/setup` installs Node 18.20.8 (matching Docker's Node 18 baseline),
+`.agents/setup` installs Node 22.23.2 (matching Docker's Node 22 baseline),
 Yarn 1.22.19, and all dependencies from `yarn.lock`. Amp snapshots the installed
 toolchain and dependencies; exact snapshots skip setup, while refreshed snapshots
 reuse Yarn's cache and existing packages. `.agents/resume` does not reinstall anything.
@@ -78,10 +78,16 @@ the latter is absent. No credentials are generated or authentication performed.
 Reddit login requires the credentials below; optional Clerk and Supabase features
 require their own credentials. Default development needs no local database.
 
-Run `yarn lint` or `yarn build` to check the project. To start a supervised preview,
+Run `yarn test`, `yarn typecheck`, `yarn lint`, and `yarn build` to check the project. To start a supervised preview,
 use `amp orb service start troddit --command 'yarn dev --hostname 0.0.0.0' --portal`
-and open the returned portal URL. Node 18 is end-of-life; this setup preserves the
-archived application's existing baseline rather than upgrading its runtime.
+and open the returned portal URL. The runtime is upgraded from the end-of-life
+Node 18 baseline; the existing Pages Router and Reddit API contracts are retained.
+
+With `agent-browser` installed and the app running, run
+`node tests/browser-smoke.cjs http://localhost:3000` for the isolated UI smoke test.
+It covers reading presets, reload persistence, spoiler reveal, post focus/closing,
+mobile navigation/search, themes, and settings. Reddit responses are fixtures;
+this does not verify real authentication or API mutations.
 
 ### Environment Variables
 
@@ -98,6 +104,43 @@ SIGNING_PRIVATE_KEY=<See https://next-auth.js.org/v3/warnings, Generate with $jo
 
 To create a Reddit app visit [https://old.reddit.com/prefs/apps/](https://old.reddit.com/prefs/apps/).
 The redirect uri should match the REDDIT_REDIRECT variable.
+
+### Self-hosting and PWA
+
+Reader, Compact, and Gallery share the same persisted display preferences.
+Settings groups advanced controls by task and provides versioned JSON export/import
+for preferences and local collections (not credentials, drafts, or Reddit account data).
+Appearance offers 13 palettes plus the device theme, independent accent colors,
+14–20px reading text, adjustable line spacing, sans/serif type, and card density.
+Theme and reading tuning are included in preference backups; older backups still work.
+
+Anonymous post bookmarks live at `/bookmarks`, separate from Reddit saves. Signed-in
+readers can also choose a local bookmark from a post's options menu. Only post metadata
+is stored, not offline post content. Bookmarks, recent searches, and collection pins
+are device-local and are not included in preference backups. Recent searches can be
+cleared in search; collection stars pin frequently used feeds in the sidebar.
+
+For the theme, bookmark, filter, search, and long-session UI checks, run
+`node tests/browser-polish.cjs http://localhost:3000` against a running build.
+Analytics are off by default. To opt in, set `NEXT_PUBLIC_ENABLE_ANALYTICS=true`
+and `NEXT_PUBLIC_ANALYTICS_DOMAIN` at build time.
+
+Set `NEXTAUTH_URL` and `REDDIT_REDIRECT` to the public HTTPS origin used by your
+deployment. Service workers and installation require HTTPS (localhost is the browser's
+development exception). Keep authentication and `/api` routes on the same origin;
+Troddit deliberately never caches API, auth, or user-specific Next.js data responses.
+
+Production builds generate the service worker during `yarn build`. The app shell's
+static assets are available offline and an offline page is shown when navigation has
+no network connection; Reddit content and actions still require the network. Comment
+and edit drafts are stored locally, scoped by signed-in username, mode, post, and
+parent, and removed only after successful submission. The PWA status control can
+install the app, activate waiting updates, and clear only app asset caches. On iOS,
+install from Safari using **Share → Add to Home Screen**.
+
+Do not deploy generated `public/sw.js` from an old build: rebuild it alongside every
+release. Reverse proxies should avoid long-lived caching for `/sw.js` so update checks
+can discover new versions.
 
 ## Docker
 
@@ -123,6 +166,9 @@ cd troddit
 
 To build the image and run container
 
+Create `.env.local` from `.env.example` and supply your deployment values first.
+Compose loads that file at runtime; environment files are excluded from the image.
+
 ```sh
 docker-compose up
 ```
@@ -136,7 +182,7 @@ docker build . -t troddit
 This will create the troddit image and pull in the necessary dependencies. To run:
 
 ```sh
-docker run -p 3000:3000 troddit
+docker run --env-file .env.local -p 3000:3000 troddit
 ```
 
 ### Support

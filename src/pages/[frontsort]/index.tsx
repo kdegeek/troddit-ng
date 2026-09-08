@@ -4,7 +4,6 @@ import Feed from "../../components/Feed";
 import NavBar from "../../components/NavBar";
 import Head from "next/head";
 import PostModal from "../../components/PostModal";
-import LoginModal from "../../components/LoginModal";
 import { loadPost } from "../../RedditAPI";
 import { findMediaInfo } from "../../../lib/utils";
 
@@ -59,7 +58,6 @@ const FrontSortPage = ({ query, metaTags, post }) => {
         ) : (
           <>
             <div className="mt-10">
-              <LoginModal />
               <PostModal
                 permalink={`/${query?.frontsort}`}
                 returnRoute={query?.slug?.[0] ? `/r/${query?.slug[0]}` : "/"}

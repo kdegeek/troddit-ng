@@ -1,235 +1,335 @@
-import Search from "./Search";
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import DropdownPane from "./DropdownPane";
-
-import { CgMenu } from "react-icons/cg";
-import SideNav from "./SideNav";
-import NavMenu from "./NavMenu";
-import NavMessage from "./NavMessage";
 import { useRouter } from "next/router";
-import SortMenu from "./SortMenu";
-
-import { usePlausible } from "next-plausible";
-import { useMainContext } from "../MainContext";
-import FilterMenu from "./FilterMenu";
+import { useSession } from "next-auth/react";
+import { Dialog } from "@headlessui/react";
+import { useTheme } from "next-themes";
+import {
+  FiArrowUpRight,
+  FiBookmark,
+  FiCompass,
+  FiGrid,
+  FiHash,
+  FiHome,
+  FiMenu,
+  FiMoon,
+  FiPlus,
+  FiSearch,
+  FiSettings,
+  FiSun,
+  FiStar,
+  FiUser,
+  FiX,
+} from "react-icons/fi";
+import Search from "./Search";
+import NavMenu from "./NavMenu";
 import LoginProfile from "./LoginProfile";
-import useRefresh from "../hooks/useRefresh";
-import useNavBarScrollHelper from "../hooks/useNavBarScrollHelper";
-import { useWindowWidth } from "@react-hook/window-size";
-import { AiOutlineSearch } from "react-icons/ai";
+import { useMainContext } from "../MainContext";
+import { useSubsContext } from "../MySubs";
+import { constructMultiLink } from "../../lib/navigation";
+import { isDarkPalette } from "../../lib/appearance";
+import toast from "react-hot-toast";
 
-const withNavMessage = !!(process.env.NEXT_PUBLIC_NEW_APP && process.env.NEXT_PUBLIC_NEW_URL);
-
-const NavBar = ({ toggleSideNav = 0 }) => {
-  const context: any = useMainContext();
-  const { invalidateKey, refreshCurrent, fetchingCount } = useRefresh();
-  const plausible = usePlausible();
+export default function NavBar({ toggleSideNav = 0 }) {
   const router = useRouter();
-  const windowWidth = useWindowWidth();
+  const { data: session } = useSession();
+  const context: any = useMainContext();
+  const subs: any = useSubsContext();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [drawer, setDrawer] = useState(false);
+  const [search, setSearch] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [hidden, setHidden] = useState(false);
-  const [allowHide, setallowHide] = useState(true);
-  const [allowShow, setAllowShow] = useState(true);
-  const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [showNavMessage, setShowNavMessage] = useState(withNavMessage);
-  //add some delay before navbar can be hidden again.. resolves some issues with immediate hide after navigation
-  const [timeSinceNav, setTimeSinceNav] = useState(() => new Date().getTime());
-
-  useNavBarScrollHelper({
-    allowHide,
-    allowShow,
-    setHidden,
-    timeSinceNav,
-    autoHideNav: context.autoHideNav,
-  });
+  const [shortcut, setShortcut] = useState("Ctrl K");
+  const [pins, setPins] = useState<string[]>([]);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    toggleSideNav && setSidebarVisible(true);
-    return () => {
-      setSidebarVisible(false);
+    setShortcut(/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘ K" : "Ctrl K");
+    try {
+      setCollapsed(localStorage.getItem("troddit:sidebar") === "collapsed");
+      const stored = JSON.parse(
+        localStorage.getItem("troddit:pinnedCollections") || "[]",
+      );
+      if (Array.isArray(stored))
+        setPins(stored.filter((key) => typeof key === "string"));
+    } catch {
+      /* Navigation remains usable without storage. */
+    }
+    const keydown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearch((value) => !value);
+      }
     };
+    window.addEventListener("keydown", keydown);
+    return () => window.removeEventListener("keydown", keydown);
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.sidebar = collapsed
+      ? "collapsed"
+      : "expanded";
+  }, [collapsed]);
+  useEffect(() => {
+    setDrawer(false);
+    setSearch(false);
+  }, [router.asPath]);
+  useEffect(() => {
+    if (toggleSideNav) setDrawer(true);
   }, [toggleSideNav]);
 
-  useEffect(() => {
-    setTimeSinceNav(() => new Date().getTime());
-    if (router.pathname === "/download") {
-      setHidden(true);
-      setAllowShow(false);
-    } else {
-      if (!context?.mediaMode) {
-        setAllowShow(true);
-        setHidden(false);
-        if (
-          router.asPath?.includes("/comments/") ||
-          router.asPath?.includes("/about") ||
-          router.asPath?.includes("/settings") ||
-          router.asPath?.includes("/changelog") ||
-          router.asPath?.includes("/subreddits")
-        ) {
-          setallowHide(false);
-        } else {
-          setallowHide(true);
-        }
-      }
-    }
-
-    return () => {
-      //setallowHide(true);
-    };
-  }, [router]);
-
-  useEffect(() => {
-    if (context.mediaMode) {
-      setTimeSinceNav(() => new Date().getTime());
-      setHidden(true);
-      setallowHide(true);
-      setAllowShow(false);
-    } else if (
-      context?.mediaMode === false &&
-      router.pathname !== "/download"
-    ) {
-      setHidden(false);
-      setAllowShow(true);
-    } else if (router.pathname !== "/download") {
-      setAllowShow(true);
-    }
-  }, [context.mediaMode]);
-
-  useEffect(() => {
-    const updateMousePosition = (ev) => {
-      //console.log({ x: ev.clientX, y: ev.clientY });
-      if (allowShow && ev.clientY < 100) {
-        setHidden(false);
-      }
-    };
-    window.addEventListener("mousemove", updateMousePosition);
-    return () => {
-      window.removeEventListener("mousemove", updateMousePosition);
-    };
-  }, [allowShow]);
-
-  const homeClick = () => {
-    router?.route === "/" && invalidateKey(["feed", "HOME"], false); // setForceRefresh((p) => p + 1);
-  };
-
-  const navMessageShown = !router.asPath?.includes("/comments/") && showNavMessage;
-  const messageHeightOffset = showNavMessage;
+  const profile = session?.user?.name ? `/u/${session.user.name}` : "/settings";
+  const saved = session?.user?.name
+    ? `/u/${session.user.name}/saved`
+    : "/bookmarks";
+  const links = [
+    { label: "Home", href: "/", icon: FiHome },
+    { label: "Discover", href: "/r/popular", icon: FiCompass },
+    { label: session ? "Saved" : "Bookmarks", href: saved, icon: FiBookmark },
+  ];
+  const communities = session
+    ? (subs.mySubs ?? []).map((sub) => sub.data?.display_name).filter(Boolean)
+    : (context.localSubs ?? []);
+  const collections = session
+    ? (subs.myMultis ?? [])
+    : (subs.myLocalMultis ?? []);
+  const active = (href: string) =>
+    href === "/" ? router.asPath === "/" : router.asPath.split("?")[0] === href;
+  const navLink = ({ label, href, icon: Icon }, mobile = false) =>
+    href ? (
+      <Link
+        key={label}
+        href={href}
+        className={mobile ? "mobile-destination" : "rail-link"}
+        aria-current={active(href) ? "page" : undefined}
+        title={label}
+      >
+        <Icon aria-hidden="true" />
+        <span>{label}</span>
+      </Link>
+    ) : (
+      <button
+        key={label}
+        className={mobile ? "mobile-destination" : "rail-link"}
+        title={label}
+        onClick={() => context.setLoginModal(true)}
+      >
+        <Icon aria-hidden="true" />
+        <span>{label}</span>
+      </button>
+    );
+  const navigation = (
+    <>
+      <nav aria-label="Main navigation" className="rail-primary">
+        {links.map((link) => navLink(link))}
+        {session &&
+          navLink({
+            label: "Local bookmarks",
+            href: "/bookmarks",
+            icon: FiBookmark,
+          })}
+      </nav>
+      <div className="rail-library">
+        <div className="rail-section-heading">
+          <span>Your collections</span>
+          <Link href="/subreddits" aria-label="Manage collections">
+            <FiPlus />
+          </Link>
+        </div>
+        {[...collections]
+          .sort(
+            (a, b) =>
+              Number(pins.includes(constructMultiLink(b))) -
+              Number(pins.includes(constructMultiLink(a))),
+          )
+          .map((multi) => (
+            <div className="collection-link" key={constructMultiLink(multi)}>
+              <Link
+                key={multi.data?.name}
+                href={constructMultiLink(multi)}
+                className="rail-link"
+              >
+                <FiGrid />
+                <span>{multi.data?.display_name ?? multi.data?.name}</span>
+              </Link>
+              <button
+                aria-label={`${pins.includes(constructMultiLink(multi)) ? "Unpin" : "Pin"} collection ${multi.data?.display_name ?? multi.data?.name}`}
+                aria-pressed={pins.includes(constructMultiLink(multi))}
+                onClick={() => {
+                  const key = constructMultiLink(multi);
+                  const next = pins.includes(key)
+                    ? pins.filter((pin) => pin !== key)
+                    : [...pins, key];
+                  setPins(next);
+                  try {
+                    localStorage.setItem(
+                      "troddit:pinnedCollections",
+                      JSON.stringify(next),
+                    );
+                  } catch {
+                    toast.error(
+                      "Pinned for this visit only. Browser storage is unavailable.",
+                    );
+                  }
+                }}
+              >
+                <FiStar />
+              </button>
+            </div>
+          ))}
+        {!collections.length && (
+          <p className="rail-hint">
+            Organize your favorite communities into a personal feed.
+          </p>
+        )}
+        <div className="rail-section-heading">
+          <span>Communities</span>
+          <Link href="/subreddits" aria-label="Browse communities">
+            <FiPlus />
+          </Link>
+        </div>
+        {communities.slice(0, 30).map((name: string) => (
+          <Link
+            key={name}
+            href={name.startsWith("u_") ? `/u/${name.slice(2)}` : `/r/${name}`}
+            className="rail-link"
+            title={name.startsWith("u_") ? `u/${name.slice(2)}` : `r/${name}`}
+          >
+            <span className="community-avatar">{name.slice(0, 1)}</span>
+            <span>{name}</span>
+          </Link>
+        ))}
+        <Link href="/subreddits" className="rail-link rail-muted">
+          <FiHash />
+          <span>Browse communities</span>
+        </Link>
+        <Link href="/r/all" className="rail-link rail-muted">
+          <FiArrowUpRight />
+          <span>All of Reddit</span>
+        </Link>
+      </div>
+      <div className="rail-footer">
+        {navLink({ label: "Settings", href: "/settings", icon: FiSettings })}
+        <div className="rail-note">
+          <span className="connection-dot" />
+          Your space. Your pace.
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <>
+      <a className="skip-link" href="#app-content">
+        Skip to content
+      </a>
       <header
-        className={
-          `${hidden ? "-translate-y-full" : "translate-y-0"}` +
-          " z-50 fixed top-0 transition ease-in-out transform  w-screen  " +
-          (hidden ? " duration-500" : " duration-200")
-        }
+        className={`app-header ${context.mediaMode ? "app-header-hidden" : ""}`}
       >
-        <NavMessage
-          hide={!navMessageShown}
-          onHide={() => setShowNavMessage(false)}
-          timeSinceNav={timeSinceNav}
-        />
-        <SideNav visible={sidebarVisible} toggle={setSidebarVisible} />
-        <nav className="flex relative flex-row flex-grow items-center h-12 shadow-lg bg-th-background2 md:justify-between">
-          <CgMenu
-            className="flex-none w-10 h-10 cursor-pointer md:hidden"
+        <div className="app-brand-area">
+          <button
+            className="icon-button desktop-menu"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={() => {
-              setSidebarVisible((vis) => !vis);
-              // plausible("sidenav");
+              setCollapsed(!collapsed);
+              localStorage.setItem(
+                "troddit:sidebar",
+                !collapsed ? "collapsed" : "expanded",
+              );
             }}
-          />
-          <div className="flex flex-row justify-start items-center mr-2 space-x-2 h-full">
-            <Link href="/" passHref>
-              <h1
-                className="ml-2 text-2xl align-middle cursor-pointer select-none"
-                onClick={homeClick}
-              >
-                {"troddit"}
-              </h1>
-            </Link>
-
-            <div
-              className="flex-none hidden h-full py-1.5 md:block w-60"
-              onClick={() => plausible("dropdownPane")}
-            >
-              <DropdownPane hide={hidden} />
-            </div>
-          </div>
-          <div className="hidden w-full h-full py-1.5 max-w-5xl md:block">
-            <Search id={"subreddit search main"} />
-          </div>
-          <div
-            className={
-              "flex-none  h-10 transition  duration-200 ease-in-out origin-top md:origin-top-right lg:origin-right " +
-              (showSearch
-                ? ` absolute top-[3.2rem] w-[90vw]  left-[5vw] md:left-[25vw] md:w-[50vw] lg:relative lg:top-auto lg:left-0  lg:w-[24rem] scale-x-100 `
-                : " w-0 absolute lg:scale-x-0 scale-x-0 scale-y-0 lg:scale-y-100 opacity-0 ")
+          >
+            <FiMenu />
+          </button>
+          <button
+            className="icon-button mobile-menu"
+            aria-label="Open navigation"
+            onClick={() => setDrawer(true)}
+          >
+            <FiMenu />
+          </button>
+          <Link href="/" className="app-brand" aria-label="Troddit home">
+            <span className="brand-symbol">
+              t<span>•</span>
+            </span>
+            <span>
+              troddit<span className="brand-period">.</span>
+            </span>
+          </Link>
+        </div>
+        <button className="search-trigger" onClick={() => setSearch(true)}>
+          <FiSearch />
+          <span>Search communities, posts, people</span>
+          <kbd>{shortcut}</kbd>
+        </button>
+        <div className="header-actions">
+          <button
+            className="icon-button mobile-search"
+            aria-label="Search"
+            onClick={() => setSearch(true)}
+          >
+            <FiSearch />
+          </button>
+          <button
+            className="icon-button"
+            aria-label="Toggle light and dark theme"
+            onClick={() =>
+              setTheme(isDarkPalette(resolvedTheme) ? "light" : "dark")
             }
           >
-            {showSearch && (
-              <Search
-                id={"subreddit search main"}
-                setShowSearch={windowWidth < 1024 ? setShowSearch : (a) => {}}
-              />
-            )}
+            {mounted && isDarkPalette(resolvedTheme) ? <FiSun /> : <FiMoon />}
+          </button>
+          <div className="header-account">
+            <LoginProfile />
           </div>
-          <div className="flex flex-row items-center justify-end h-full py-1.5 ml-auto mr-2 space-x-1 md:ml-2">
-            <button
-              disabled={mounted && windowWidth > 768}
-              aria-label="show search"
-              className={
-                "flex flex-none justify-center items-center w-10 h-full rounded-md border border-transparent outline-none md:hidden hover:border-th-border"
-              }
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowSearch((s) => !s);
-              }}
-            >
-              <AiOutlineSearch className="flex-none w-6 h-6" />
-            </button>
-            <div className="w-20 h-full">
-              <SortMenu hide={hidden} />
-            </div>
-            <div
-              className="flex flex-row items-center mr-2 w-10 h-full"
-              onClick={() => plausible("filters")}
-            >
-              <FilterMenu hide={hidden} />
-            </div>
-            <div
-              className={
-                "hidden w-20 h-full rounded-md border border-transparent hover:border-th-border md:block"
-              }
-              //onClick={() => plausible("login")}
-            >
-              <LoginProfile />
-            </div>
-
-            <div
-              className="flex flex-row items-center mr-2 w-10 h-full"
-              onClick={() => plausible("options")}
-            >
-              <NavMenu hide={hidden} />
-            </div>
+          <div className="legacy-options">
+            <NavMenu hide={false} />
           </div>
-        </nav>
-        {fetchingCount > 0 && (
-          <div className="relative">
-            <div className="absolute top-0 z-40 w-screen h-1 animate-pulse bg-th-accent"></div>
-            <div className="absolute top-0 z-30 w-screen h-1 bg-th-base"></div>
-          </div>
-        )}
+        </div>
       </header>
-      <div className={messageHeightOffset ? "h-[7rem]" : "h-[3.5rem]"}></div>
+      <aside className="app-sidebar" aria-label="Your library">
+        {navigation}
+      </aside>
+      {!context.postOpen && (
+        <nav className="mobile-navigation" aria-label="Mobile navigation">
+          {links.map((link) => navLink(link, true))}
+          {navLink({ label: "You", href: profile, icon: FiUser }, true)}
+        </nav>
+      )}
+      <Dialog open={drawer} onClose={setDrawer} className="shell-dialog">
+        <Dialog.Overlay className="shell-overlay" />
+        <div className="navigation-drawer">
+          <div className="drawer-heading">
+            <Dialog.Title>Your space</Dialog.Title>
+            <button
+              className="icon-button"
+              aria-label="Close navigation"
+              onClick={() => setDrawer(false)}
+            >
+              <FiX />
+            </button>
+          </div>
+          {navigation}
+        </div>
+      </Dialog>
+      <Dialog open={search} onClose={setSearch} className="shell-dialog">
+        <Dialog.Overlay className="shell-overlay" />
+        <div className="search-dialog">
+          <div className="drawer-heading">
+            <Dialog.Title>Find your next rabbit hole</Dialog.Title>
+            <button
+              className="icon-button"
+              aria-label="Close search"
+              onClick={() => setSearch(false)}
+            >
+              <FiX />
+            </button>
+          </div>
+          <Search id="global-search" setShowSearch={setSearch} />
+          <p className="search-hint">
+            Search posts, communities, and people. Press Esc to close.
+          </p>
+        </div>
+      </Dialog>
     </>
   );
-};
-
-export default NavBar;
+}

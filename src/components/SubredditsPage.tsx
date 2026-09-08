@@ -231,12 +231,13 @@ const SubredditsPage = ({ query = undefined as any }) => {
 
   return (
     <>
-      <div className="flex flex-col justify-center gap-3 mx-4 md:gap-0 md:mx-auto md:flex-row">
+      <div className="feed-title-row"><div><p className="eyebrow">BUILD YOUR OWN CORNER</p><h1>Your communities</h1><p className="feed-description">Follow what interests you. Bring your favorites together in a collection.</p></div></div>
+      <div className="flex flex-col gap-5 md:flex-row">
         <Tab.Group onChange={setSelectedIndex} selectedIndex={selectedIndex}>
-          <Tab.List className={""}>
+          <Tab.List className="flex-none md:w-48">
             <div
               className={
-                " sticky mt-3 md:mt-0 md:top-[3.5rem] md:fixed z-10 flex flex-row md:flex-col gap-2 w-full md:w-52 px-0 pb-0 md:py-2 mr-4 overflow-hidden bg-th-post transition-colors border border-th-border2  shadow-md  rounded-lg"
+                "sticky top-24 z-10 flex flex-row md:flex-col gap-2 w-full p-2 overflow-x-auto bg-th-post border border-th-border rounded-xl"
               }
             >
               {categories.map((c) => (
@@ -260,7 +261,7 @@ const SubredditsPage = ({ query = undefined as any }) => {
                           : c === "follows"
                           ? "My Following"
                           : c === "feeds"
-                          ? "My Feeds"
+                          ? "Collections"
                           : ""}
                       </h1>
                     </div>
@@ -268,18 +269,13 @@ const SubredditsPage = ({ query = undefined as any }) => {
                 </Tab>
               ))}
             </div>
-            <div
-              className={
-                " hidden sticky top-[3.5rem]  -z-10 md:flex flex-row md:flex-col gap-2 w-full md:w-52 px-0 pb-0 md:py-2 mr-4 overflow-hidden bg-transparent border border-transparent  rounded-lg"
-              }
-            ></div>
           </Tab.List>
-          <Tab.Panels>
+          <Tab.Panels className="flex-1 min-w-0">
             {categories.map((c, i) => (
               <Tab.Panel
                 key={c}
                 className={
-                  " mb-10 mt-2   flex flex-col gap-3  md:w-[32rem] lg:w-[48rem] xl:w-[54rem] 2xl:w-[60rem] "
+                  "mb-10 flex flex-col gap-3 w-full"
                 }
               >
                 {c === "popular" ? (
@@ -460,6 +456,12 @@ const SubredditsPage = ({ query = undefined as any }) => {
                   </>
                 ) : c === "feeds" ? (
                   <>
+                    <div className="rounded-xl border border-th-border bg-th-post p-4">
+                      <h2 className="text-lg font-bold">Your collections</h2>
+                      <p className="mt-1 text-sm text-th-textLight">
+                        Create a collection, choose it for editing, then use search to add or remove communities.
+                      </p>
+                    </div>
                     <MyMultiCollections />
                   </>
                 ) : (

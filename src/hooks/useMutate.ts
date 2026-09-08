@@ -107,7 +107,7 @@ const useMutate = () => {
               }
               for (
                 let i = 0;
-                i < comment?.data?.replies?.data?.children?.length ?? 0;
+                i < (comment?.data?.replies?.data?.children?.length ?? 0);
                 i++
               ) {
                 iterComments(

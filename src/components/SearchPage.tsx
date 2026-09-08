@@ -1,369 +1,181 @@
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
-import { AiOutlineCheck } from "react-icons/ai";
-import { RiArrowGoBackLine } from "react-icons/ri";
+import React, { useEffect, useRef, useState } from "react";
 import { useMainContext } from "../MainContext";
+import { useTAuth } from "../PremiumAuthContext";
 import { getRedditSearch } from "../RedditAPI";
 import Feed from "./Feed";
 import SubCard from "./cards/SubCard";
 import SubCardPlaceHolder from "./cards/SubCardPlaceHolder";
 import Checkbox from "./ui/Checkbox";
-import React from "react";
-import { useTAuth } from "../PremiumAuthContext";
+
+type SearchType = "posts" | "sr" | "user";
+
 const SearchPage = ({ query }) => {
   const { isLoaded, premium } = useTAuth();
   const router = useRouter();
   const context: any = useMainContext();
-  const [loading, setLoading] = useState(true);
-  const [subs, setSubs] = useState<any[]>([]);
-  const [after, setAfter] = useState("");
-  const [expand, setExpand] = useState(false);
-  const [searchUsers, setSearchUsers] = useState(false);
   const { safeSearch, setSafeSearch } = context;
-  const loadMore = async () => {
+  const type: SearchType =
+    router.query.type === "sr"
+      ? "sr"
+      : router.query.type === "user"
+        ? "user"
+        : "posts";
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
+  const [after, setAfter] = useState("");
+  const [error, setError] = useState("");
+  const request = useRef(0);
+
+  const selectType = (nextType: SearchType) => {
+    const nextQuery = { ...router.query };
+    if (nextType === "posts") delete nextQuery.type;
+    else nextQuery.type = nextType;
+    router.push({ pathname: router.pathname, query: nextQuery }, undefined, {
+      shallow: true,
+    });
+  };
+
+  const fetchResults = async (cursor = "", append = false) => {
+    if (type === "posts") return;
+    const currentRequest = ++request.current;
+    append ? setLoadingMore(true) : setLoading(true);
+    setError("");
     try {
-      let subs = await getRedditSearch({
+      const data = await getRedditSearch({
         params: { q: query?.q },
-        after,
+        after: cursor,
         include_over_18: safeSearch ? undefined : true,
-        searchtype: router.query?.type === "user" ? "user" : "sr",
+        searchtype: type,
         isPremium: premium?.isPremium ?? false,
       });
-      if (subs?.children) {
-        let filtered = subs?.children?.filter(
-          (c) => c?.data?.accept_followers === true
-        );
-        setSubs((p) => [...p, ...filtered]);
-      }
-
-      setAfter(subs?.after);
+      if (currentRequest !== request.current) return;
+      const children = (data?.children ?? []).filter(
+        (item) => type !== "user" || item?.data?.accept_followers === true,
+      );
+      setResults((current) => (append ? [...current, ...children] : children));
+      setAfter(data?.after ?? "");
     } catch (err) {
-      if (err?.message === "PREMIUM REQUIRED") {
-        context.setPremiumModal(true);
-      } else {
-        throw err;
+      if (currentRequest !== request.current) return;
+      if (err?.message === "PREMIUM REQUIRED") context.setPremiumModal(true);
+      else setError("Search results could not be loaded. Please try again.");
+    } finally {
+      if (currentRequest === request.current) {
+        setLoading(false);
+        setLoadingMore(false);
       }
     }
   };
 
   useEffect(() => {
-    if (router.query.type === "sr" || router.query.type === "user") {
-      setExpand(true);
-    } else {
-      setExpand(false);
-    }
-    // if (router.query.type === "user") {
-    //   setSearchUsers(true);
-    // } else {
-    //   setSearchUsers(false);
-    // }
+    setResults([]);
+    setAfter("");
+    setError("");
+    if (isLoaded && type !== "posts") fetchResults();
     return () => {
-      setExpand(false);
-      //setSearchUsers(false);
+      request.current++;
     };
-  }, [router.query]);
+  }, [query?.q, safeSearch, type, isLoaded, premium?.isPremium]);
 
-  useEffect(() => {
-    if (expand) {
-      if (router?.query?.type === "sr" && searchUsers) {
-        router.replace(
-          router.asPath.replace(`&type=${router.query.type}`, "&type=user")
-        );
-      } else if (router?.query?.type === "user" && !searchUsers) {
-        router.replace(
-          router.asPath.replace(`&type=${router.query.type}`, "&type=sr")
-        );
-      }
-    }
-  }, [searchUsers, expand, router.query.type]);
+  const labels: Array<[SearchType, string]> = [
+    ["posts", "Posts"],
+    ["sr", "Communities"],
+    ["user", "People"],
+  ];
 
-  useEffect(() => {
-    const getSearch = async () => {
-      let subs = await getRedditSearch({
-        params: { q: query?.q },
-        after: "",
-        include_over_18: safeSearch ? undefined : true,
-        searchtype: router.query?.type === "user" ? "user" : "sr",
-        isPremium: premium?.isPremium ?? false,
-      });
-      //console.log(subs);
-      if (subs?.children) {
-        let filtered = subs.children.filter(
-          (c) => c?.data?.accept_followers === true
-        );
-        setSubs(filtered);
-      }
-
-      setAfter(subs?.after);
-
-      setLoading(false);
-    };
-    if (isLoaded) {
-      getSearch();
-    }
-    return () => {
-      setSubs([]);
-      setAfter("");
-      setLoading(true);
-    };
-  }, [
-    query?.q,
-    safeSearch,
-    router.query?.type,
-    searchUsers,
-    isLoaded,
-    premium?.isPremium,
-  ]);
   return (
     <div>
-      <div className="flex flex-col items-center flex-none w-screen ">
-        <div
-          className={
-            "w-full " +
-            (!expand &&
-              (context.columnOverride === 1 &&
-              context.cardStyle !== "row1" &&
-              !context.wideUI
-                ? " max-w-2xl "
-                : " md:w-11/12 "))
-          }
-        >
+      <div className="mx-auto mb-4 w-full md:w-11/12">
+        <div className="flex flex-col gap-3 border border-th-border bg-th-post p-3 rounded-xl md:flex-row md:items-center">
           <div
-            className={
-              expand
-                ? "flex flex-col  justify-center gap-3 mx-4 md:gap-0 md:mx-auto md:flex-row"
-                : "flex flex-col gap-1"
-            }
+            className="flex gap-2"
+            role="tablist"
+            aria-label="Search result type"
           >
-            <div>
-              <div
-                className={
-                  (expand
-                    ? "md:sticky top-[4rem] flex flex-row md:flex-col gap-2 w-full md:w-52 md:flex-none  p-2 md:px-0 md:mr-4  border  bg-th-post border-th-border2   shadow-md  " +
-                      " rounded-lg "
-                    : "flex flex-row justify-between select-none  ") + " "
-                }
-              >
-                <div
-                  className={
-                    "flex flex-row items-baseline gap-2  w-full " +
-                    (expand ? " md:flex-col md:items-start    " : " font-bold ")
-                  }
-                >
-                  {["Subreddits", "Users"].map((sel) => (
-                    <div
-                      key={sel}
-                      className={
-                        "cursor-pointer " +
-                        ((searchUsers && sel == "Users") ||
-                        (!searchUsers && sel == "Subreddits")
-                          ? ` font-bold  ${expand ? " bg-th-highlight " : ""} `
-                          : " opacity-50 hover:opacity-70") +
-                        (expand
-                          ? " md:w-full flex flex-col-reverse   -mb-2 md:mb-0 items-center md:flex-row flex-grow"
-                          : "")
-                      }
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setSearchUsers((p) => !p);
-                      }}
-                    >
-                      {expand && (
-                        <div className="w-full h-1 mt-1 md:w-1 md:h-8 md:mr-2 md:mt-0 bg-th-scrollbar"></div>
-                      )}
-
-                      {sel}
-                    </div>
-                  ))}
-                  <div
-                    className={
-                      "flex flex-row items-center my-auto gap-2 hover:cursor-pointer" +
-                      (expand
-                        ? " md:flex-row-reverse ml-auto md:mr-auto md:ml-0 md:my-1 pl-2 "
-                        : " mr-2 ml-auto ")
-                    }
-                  >
-                    <Checkbox
-                      clickEvent={() => setSafeSearch((r) => !r)}
-                      toggled={safeSearch}
-                      labelText={"Safe Search"}
-                      reverse={expand}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div
-                className={
-                  (expand ? " hidden md:block " : " hidden ") +
-                  " cursor-pointer opacity-50 hover:opacity-70 w-full sticky top-[13rem] "
-                }
-                onClick={(e) => {
-                  e.preventDefault();
-                  router.back();
+            {labels.map(([value, label]) => (
+              <button
+                key={value}
+                role="tab"
+                id={`search-type-${value}`}
+                aria-controls="search-results"
+                tabIndex={type === value ? 0 : -1}
+                aria-selected={type === value}
+                onClick={() => selectType(value)}
+                onKeyDown={(event) => {
+                  const index = labels.findIndex(([key]) => key === value);
+                  const next = event.key === "ArrowRight" ? (index + 1) % labels.length : event.key === "ArrowLeft" ? (index + labels.length - 1) % labels.length : event.key === "Home" ? 0 : event.key === "End" ? labels.length - 1 : -1;
+                  if (next < 0) return;
+                  event.preventDefault();
+                  selectType(labels[next][0]);
+                  document.getElementById(`search-type-${labels[next][0]}`)?.focus();
                 }}
+                className={`px-3 py-2 rounded-lg hover:bg-th-highlight ${
+                  type === value ? "font-bold bg-th-highlight" : "opacity-60"
+                }`}
               >
-                <RiArrowGoBackLine className="w-10 h-10 ml-auto mr-4 " />
-              </div>
-            </div>
-            <div
-              className={
-                expand
-                  ? " mb-10 mt-2 flex flex-col gap-3  md:w-[32rem] lg:w-[48rem] xl:w-[54rem] 2xl:w-[60rem] "
-                  : ""
-              }
-            >
-              {loading && (
-                <div
-                  className={
-                    " flex flex-col  " +
-                    (context.cardStyle === "row1" || expand ? " " : " mx-1") +
-                    (expand ? " gap-3 " : " gap-1")
-                  }
-                >
-                  {[...Array(expand ? 3 : 3)].map((u, i) => (
-                    <div key={i}>
-                      <SubCardPlaceHolder user={searchUsers} />
-                    </div>
-                  ))}
-                  <button
-                    aria-label="...loading"
-                    className="flex items-center justify-center w-24 mt-2 ml-auto text-center border rounded-md cursor-pointer h-9 bg-th-background2 border-th-border hover:border-th-borderHighlight hover:bg-th-highlight ring-1 ring-th-base"
-                    onClick={(e) => {
-                      e.preventDefault();
-                    }}
-                  >
-                    {"     "}
-                  </button>
-                </div>
-              )}
-
-              {subs.length > 0 ? (
-                <>
-                  <div
-                    className={
-                      " flex flex-col  " +
-                      (context.cardStyle === "row1" || expand ? " " : " mx-1") +
-                      (expand ? " gap-3" : " gap-1")
-                    }
-                  >
-                    {subs.map((s, i) => {
-                      if (i < 3 || expand) {
-                        return (
-                          <div key={i}>
-                            <SubCard data={s} />
-                          </div>
-                        );
-                      }
-                    })}
-                    {subs.length > 0 && (
-                      <div
-                        className={
-                          "flex flex-row min-w-full mt-2 " +
-                          (expand ? " mb-10 " : " ")
-                        }
-                      >
-                        {expand && (
-                          <div
-                            onClick={(e) => {
-                              e.preventDefault();
-                              router.back();
-                            }}
-                            className="flex items-center justify-center w-24 text-center border rounded-md cursor-pointer h-9 bg-th-background2 border-th-border hover:border-th-borderHighlight hover:bg-th-highlight ring-1 ring-th-base "
-                          >
-                            Go Back
-                          </div>
-                        )}
-                        {expand && (
-                          <div
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setSearchUsers((s) => !s);
-                            }}
-                            className="flex items-center justify-center w-24 ml-2 text-center border rounded-md cursor-pointer h-9 bg-th-background2 border-th-border hover:border-th-borderHighlight hover:bg-th-highlight ring-1 ring-th-base "
-                          >
-                            Find {searchUsers ? "Subs" : "Users"}
-                          </div>
-                        )}
-                        {(!expand || after) && (
-                          <button
-                            aria-label="see more"
-                            className="flex items-center justify-center w-24 ml-auto text-center border rounded-md cursor-pointer h-9 bg-th-background2 border-th-border hover:border-th-borderHighlight hover:bg-th-highlight ring-1 ring-th-base "
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (!expand) {
-                                router.push(
-                                  router.query?.type
-                                    ? router.asPath.replace(
-                                        `type=${router.query.type}`,
-                                        `type=${searchUsers ? "user" : "sr"}`
-                                      )
-                                    : router.asPath.replace(
-                                        "search?",
-                                        `search?type=${
-                                          searchUsers ? "user" : "sr"
-                                        }&`
-                                      )
-                                );
-                              } else if (after) {
-                                loadMore();
-                              }
-                            }}
-                          >
-                            {expand ? "Load" : "See"} More
-                          </button>
-                        )}
-                        {expand && !after && (
-                          <div className="mt-auto ml-auto font-bold opacity-50">{`All ${
-                            searchUsers ? "users" : "subs"
-                          } found`}</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                !loading && (
-                  <>
-                    <div
-                      className={
-                        "relative mb-2" +
-                        (context.cardStyle === "row1" ? " " : " mx-1 ")
-                      }
-                    >
-                      <div className="opacity-0">
-                        {[...Array(expand ? 10 : 3)].map((u, i) => (
-                          <div key={i}>
-                            <SubCardPlaceHolder user={searchUsers} />
-                          </div>
-                        ))}
-                      </div>
-                      <div
-                        className={
-                          "absolute top-0 flex flex-col items-center justify-center w-full h-full text-center border bg-th-post border-th-border " +
-                          " rounded-lg "
-                        }
-                      >
-                        <h1>{`Didn't find any ${
-                          searchUsers ? "users" : "subreddits"
-                        } for "${query.q}"`}</h1>
-                        <h1>{`Safe Search is ${
-                          safeSearch ? " on " : "off"
-                        }`}</h1>
-                      </div>
-                    </div>
-                  </>
-                )
-              )}
-            </div>
+                {label}
+              </button>
+            ))}
           </div>
-          {!expand && <div className="mt-4 mb-1 font-bold">Posts</div>}
+          <div className="md:ml-auto">
+            <Checkbox
+              clickEvent={() => setSafeSearch((current) => !current)}
+              toggled={safeSearch}
+              labelText="Safe Search"
+            />
+          </div>
         </div>
       </div>
-      {!expand && (
-        <div className="">
-          <Feed />
+
+      <div id="search-results" role="tabpanel" aria-labelledby={`search-type-${type}`}>
+      {type === "posts" ? (
+        <Feed />
+      ) : (
+        <div className="mx-auto mb-10 flex w-full flex-col gap-3 md:w-[48rem] xl:w-[54rem]">
+          {loading &&
+            [...Array(3)].map((_, index) => (
+              <SubCardPlaceHolder key={index} user={type === "user"} />
+            ))}
+          {!loading && error && (
+            <div className="rounded-lg border border-th-border bg-th-post p-6 text-center">
+              <p>{error}</p>
+              <button
+                className="mt-3 rounded-md border border-th-border bg-th-background2 px-4 py-2 hover:bg-th-highlight"
+                onClick={() => fetchResults()}
+              >
+                Try again
+              </button>
+            </div>
+          )}
+          {!loading && !error && results.length === 0 && (
+            <div className="rounded-lg border border-th-border bg-th-post p-6 text-center">
+              <p>
+                No {type === "user" ? "people" : "communities"} found for “
+                {query?.q}”.
+              </p>
+              <p className="mt-1 text-sm opacity-60">
+                Safe Search is {safeSearch ? "on" : "off"}.
+              </p>
+            </div>
+          )}
+          {!loading &&
+            !error &&
+            results.map((result) => (
+              <SubCard key={result?.data?.name} data={result} />
+            ))}
+          {!loading && !error && after && (
+            <button
+              className="ml-auto rounded-md border border-th-border bg-th-background2 px-4 py-2 hover:bg-th-highlight disabled:opacity-50"
+              disabled={loadingMore}
+              onClick={() => fetchResults(after, true)}
+            >
+              {loadingMore ? "Loading…" : "Load more"}
+            </button>
+          )}
         </div>
       )}
+      </div>
     </div>
   );
 };

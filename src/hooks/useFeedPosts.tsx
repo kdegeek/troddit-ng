@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { UseInfiniteQueryResult } from "@tanstack/react-query";
 import useFeedGallery from "./useFeedGallery";
 import ToastCustom from "../components/toast/ToastCustom";
@@ -27,6 +27,7 @@ const useFeedPosts = ({
   const [newPostsCount, setNewPostsCount] = useState(0);
   const [blocked, setBlocked] = useState(false);
   const [checked, setChecked] = useState(false);
+  const pageCount = useRef(0);
   // useEffect(() => {
   //   if (blocked) {
   //     setFlatPosts([]);
@@ -62,6 +63,10 @@ const useFeedPosts = ({
           }
         });
         if (appendNewPosts) {
+          // Pagination incorporates the latest response at the end. A prior
+          // pending snapshot must not later replace these newly loaded pages.
+          setNewPostsCount(0);
+          setNewPosts([]);
           return [...Array.from(pPostMap.values()), ...newPostArr];
         }
         setNewPostsCount(newPostCount);
@@ -117,7 +122,7 @@ const useFeedPosts = ({
         isBlocked = check(posts);
       }
       if (!isBlocked && !blocked) {
-        if (posts?.length > flatPosts?.length) {
+        if (flatPosts.length === 0 || (feed.data?.pages?.length ?? 0) > pageCount.current) {
           //console.log('new posts')
           updatePostsInPlace(posts, true);
         } else {
@@ -129,6 +134,7 @@ const useFeedPosts = ({
       //console.log("nodata.. fetching more");
       feed.fetchNextPage();
     }
+    pageCount.current = feed.data?.pages?.length ?? 0;
   }, [feed?.data?.pages]);
 
   const overwritePosts = (setKey) => {
@@ -137,35 +143,7 @@ const useFeedPosts = ({
     setFlatPosts(newPosts);
   };
   useEffect(() => {
-    if (newPostsCount > 0) {
-      toast.remove("new_post");
-      if (!askToUpdateFeed) {
-        overwritePosts(setKey);
-      } else {
-        let tId = toast.custom(
-          (t) => (
-            <ToastCustom
-              t={t}
-              message={`${newPostsCount} new post${
-                newPostsCount === 1 ? "" : "s"
-              }`}
-              mode={"new_posts"}
-              action={() => {
-                overwritePosts(setKey);
-                if (window) {
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }
-              }}
-              actionLabel={`Update feed?`}
-            />
-          ),
-          { position: "bottom-right", duration: 1000 * 60 * 60, id: "new_post" }
-        );
-      }
-    }
-    () => {
-      toast.remove("new_post");
-    };
+    if (newPostsCount > 0 && !askToUpdateFeed) overwritePosts(setKey);
   }, [newPostsCount, askToUpdateFeed]);
 
   useEffect(() => {
@@ -174,7 +152,7 @@ const useFeedPosts = ({
     }
   }, [flatPosts]);
 
-  return { flatPosts };
+  return { flatPosts, newPostsCount, applyNewPosts: () => overwritePosts(setKey) };
 };
 
 export default useFeedPosts;

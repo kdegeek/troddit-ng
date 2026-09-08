@@ -52,7 +52,7 @@ const index = ({ postData, user }) => {
     data?.data?.user?.name,
   ]);
   return (
-    <div className="overflow-x-hidden ">
+    <div className="overflow-x-clip">
       <Head>
         <title>troddit · a web app for Reddit </title>
         <meta

@@ -1,322 +1,319 @@
 import { Tab } from "@headlessui/react";
-import React from "react";
-import { useState, useRef, useEffect, createRef } from "react";
-import { AiOutlineQuestionCircle } from "react-icons/ai";
-
-import {
-  BiImages,
-  BiComment,
-  BiDetail,
-  BiCog,
-  BiPaint,
-  BiHistory,
-} from "react-icons/bi";
-import { BsColumnsGap } from "react-icons/bs";
-import { FiFilter } from "react-icons/fi";
-import FilterSubs from "../FilterSubs";
-
-import ToggleFilters from "../ToggleFilters";
-import CardStyleDemo from "./CardStyleDemo";
-import ColumnCardOptions from "./ColumnCardOptions";
+import React, { ChangeEvent, useRef, useState } from "react";
+import { useMainContext } from "../../MainContext";
+import { exportPreferences, importPreferences } from "../../../lib/preferences";
+import DefaultSortSelector from "./DefaultSortSelector";
 import FilterEntities from "./FilterEntities";
 import History from "./History";
 import IntInput from "./IntInput";
-import DefaultSortSelector from "./DefaultSortSelector";
-import ThemeSelector from "./ThemeSelector";
+import AppearanceControls from "./AppearanceControls";
 import Toggles from "./Toggles";
+import ToggleFilters from "../ToggleFilters";
+import useReadingPreferences from "../../hooks/useReadingPreferences";
+import ColumnCardOptions from "./ColumnCardOptions";
+
+const toggleRow = (setting: any) => (
+  <Toggles
+    key={setting}
+    setting={setting}
+    withSubtext
+    externalStyles="rounded-lg group hover:bg-th-highlight p-2 cursor-pointer"
+  />
+);
+
+const Choice = ({
+  active,
+  title,
+  detail,
+  onClick,
+}: {
+  active: boolean;
+  title: string;
+  detail: string;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    className="settings-choice"
+    data-active={active}
+    aria-pressed={active}
+    onClick={onClick}
+  >
+    <strong>{title}</strong>
+    <span>{detail}</span>
+  </button>
+);
 
 const Settings = () => {
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const icons = "w-6 h-6 flex-none ";
-  const [categories] = useState({
-    Appearance: {
-      icon: <BiPaint className={icons} />,
-      settings: [
-        <label
-          key={"theme"}
-          className="flex flex-row items-center justify-between w-full p-2 my-2 hover:cursor-pointer"
-        >
-          <span className="flex flex-col gap-0.5">
-            <span>Theme</span>
-            <span className="mr-2 text-xs opacity-70">
-              Select a theme. System defaults to light or dark from your system
-              settings.
-            </span>
-          </span>
-          <div className="flex-none w-24">
-            <ThemeSelector />
-          </div>
-        </label>,
-        <label
-          key={"card_style"}
-          className="flex flex-row items-center justify-between w-full p-2 my-2 hover:cursor-pointer"
-        >
-          <span className="flex flex-col gap-0.5">
-            <span>Card Style</span>
-            <span className="mr-2 text-xs opacity-70">
-              <CardStyleDemo />
-            </span>
-          </span>
-          <div className="flex-none w-24">
-            <ColumnCardOptions mode="cards" />
-          </div>
-        </label>,
-        ...["compactLinkPics", "dimRead", "showAwardings", "showFlairs"].map(
-          (s: any) => (
-            <Toggles
-              key={s}
-              setting={s}
-              withSubtext={true}
-              externalStyles="rounded-lg group hover:bg-th-highlight p-2 cursor-pointer"
-            />
-          )
-        ),
-      ],
-    },
-    Layout: {
-      icon: <BsColumnsGap className={icons} />,
-      //[
-      settings: [
-        <label
-          key={"column_count"}
-          className="flex flex-row items-center justify-between w-full p-2 my-2 hover:cursor-pointer"
-        >
-          <span className="flex flex-col gap-0.5">
-            <span>Column Count</span>
-            <span className="mr-2 text-xs opacity-70">
-              Sets column count in your feeds. "Auto" changes columns by window
-              width
-            </span>
-          </span>
-          <div className="flex-none w-24">
-            <ColumnCardOptions mode="columns" />
-          </div>
-        </label>,
+  const context: any = useMainContext();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState("");
+  const {
+    view: activeView,
+    layout,
+    setView,
+    setLayout,
+  } = useReadingPreferences();
 
-        ...[
-          "expandedSubPane",
-          "autoHideNav",
-          "uniformHeights",
-          "wideUI",
-          // "syncWideUI",
-          "postWideUI",
-          "preferSideBySide",
-          "disableSideBySide",
-        ].map((s: any) => (
-          <Toggles
-            key={s}
-            setting={s}
-            withSubtext={true}
-            externalStyles="rounded-lg group hover:bg-th-highlight p-2 cursor-pointer"
-          />
-        )),
-      ],
-    },
-    Media: {
-      icon: <BiImages className={icons} />,
-      settings: [
-        ...[
-          "disableEmbeds",
-          "preferEmbeds",
-          "embedsEverywhere",
-          "expandImages",
-          "autoplay",
-          "hoverplay",
-          "audioOnHover",
-          "nsfw",
-        ].map((s: any) => (
-          <Toggles
-            key={s}
-            setting={s}
-            withSubtext={true}
-            externalStyles="rounded-lg group hover:bg-th-highlight p-2 cursor-pointer"
-          />
-        )),
-      ],
-    },
-    // Cards: {
-    //   icon: <BiDetail className={icons} />,
-    //   settings: [
-    //     "show sub icons",
-    //     "dim read cards",
-    //     "rounded corners",
-    //     "Show text body",
-    //   ],
-    // },
-    Comments: {
-      icon: <BiComment className={icons} />,
-      settings: [
-        ...[
-          "showUserIcons",
-          "showUserFlairs",
-          "autoCollapseComments",
-          "ribbonCollapseOnly",
-          "collapseChildrenOnly",
-          "defaultCollapseChildren",
-        ].map((s: any) => (
-          <Toggles
-            key={s}
-            setting={s}
-            withSubtext={true}
-            externalStyles={
-              "rounded-lg group hover:bg-th-highlight p-2 cursor-pointer"
-            }
-          />
-        )),
-        <label
-            key={"defaultSortComments"}
-            className="flex flex-row items-center justify-between w-full p-2 my-2 hover:cursor-pointer"
-        >
-            <span className="flex flex-col gap-0.5">
-                <span>Default Comment Sort</span>
-                <span className="mr-2 text-xs opacity-70">Default sort order for Comments on Posts</span>
-            </span>
-            <div className="flex-none min-w-[6rem]">
-                <DefaultSortSelector mode="comments" />
-            </div>
-        </label>,
-      ],
-    },
-    Filters: {
-      icon: <FiFilter className={icons} />,
-      settings: [
-        ...[
-          "self",
-          "links",
-          "images",
-          "videos",
-          "portrait",
-          "landscape",
-          "read",
-          "seen",
-        ].map((f, i) => (
-          <div key={f}>
-            <ToggleFilters filter={f} withSubtext={true} quickToggle={true} />
-          </div>
-        )),
-        <div key={"other_filters"} className={"py-1 "}>
-          <FilterEntities />
-        </div>,
-      ],
-    },
-    Behavior: {
-      icon: <BiCog className={icons} />,
-      settings: [
-        ...["autoRead", "autoSeen", "infiniteLoading", "autoRefreshFeed"].map(
-          (s: any) => (
-            <Toggles
-              key={s}
-              setting={s}
-              withSubtext={true}
-              externalStyles="rounded-lg group hover:bg-th-highlight p-2 cursor-pointer"
-            />
-          )
-        ),
-        ...["slowRefreshInterval", "fastRefreshInterval"].map((s: any) => (
-          <IntInput key={s} setting={s} />
-        )),
-        ...["refreshOnFocus", "askToUpdateFeed", "autoRefreshComments"].map(
-          (s: any) => (
-            <Toggles
-              key={s}
-              setting={s}
-              withSubtext={true}
-              externalStyles="rounded-lg group hover:bg-th-highlight p-2 cursor-pointer"
-            />
-          )
-        ),
-      ],
-    },
-
-    History: {
-      icon: <BiHistory className={icons} />,
-      settings: [
-        <div key={"historySettings"} className="p-2">
-          <History />
-        </div>,
-      ],
-    },
-    // Other: {
-    //   icon: <AiOutlineQuestionCircle className={icons} />,
-
-    // },
-  });
-
-  const refs = Object.keys(categories).reduce((acc, value) => {
-    acc[value] = createRef();
-    return acc;
-  }, {});
-
-  const handleCategoryChange = (id) => {
-    refs[id].current.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+  const download = async () => {
+    try {
+      const data = await exportPreferences();
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `troddit-preferences-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setStatus("Backup downloaded.");
+    } catch (error) {
+      setStatus(
+        error instanceof Error
+          ? error.message
+          : "Could not export preferences.",
+      );
+    }
+  };
+  const restore = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      if (file.size > 5 * 1024 * 1024)
+        throw new Error("Choose a preferences backup smaller than 5 MB.");
+      await importPreferences(JSON.parse(await file.text()));
+      setStatus("Backup imported. Reloading to apply your preferences…");
+      window.setTimeout(() => window.location.reload(), 500);
+    } catch (error) {
+      setStatus(
+        error instanceof Error ? error.message : "Could not import that file.",
+      );
+      event.target.value = "";
+    }
   };
 
-  return (
-    <Tab.Group
-      as={"div"}
-      vertical
-      className="relative flex w-full max-w-3xl max-h-[80vh]  "
-      selectedIndex={selectedIndex}
-      onChange={(index) => {
-        setSelectedIndex(index);
-        handleCategoryChange(Object.keys(categories)[index]);
-      }}
-    >
-      <h1 className="absolute ml-0.5 mr-auto text-xl font-semibold -top-10">
-        Settings
-      </h1>
-      <Tab.List
-        className={
-          "flex flex-col border rounded-lg overflow-y-auto  py-4 w-16 sm:w-44 px-0 pb-0 flex-none  sm:mr-4 overflow-hidden border-r-0 sm:border-r  rounded-r-none sm:rounded-r-lg bg-th-post border-th-border2 shadow-md " +
-          " scrollbar-thin scrollbar-thumb-th-scrollbar scrollbar-track-transparent scrollbar-thumb-rounded-full scrollbar-track-rounded-full bg-th-post border-th-border2"
-        }
-      >
-        {Object.keys(categories).map((category, i) => (
-          <Tab key={category} className={" outline-none "}>
-            {({ selected }) => (
-              <div
-                className={
-                  (selected ? " font-bold opacity-100 bg-th-highlight " : "") +
-                  " cursor-pointer opacity-50 hover:opacity-80 select-none flex my-1 "
-                }
-                onClick={() => {
-                  refs[category].current.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start",
-                  });
-                }}
-              >
-                <div className="w-1 h-12 mt-0 mr-2 bg-th-scrollbar "></div>
-
-                <div className="flex items-center justify-start py-2 pl-1">
-                  <span className="">{categories[category]?.icon}</span>
-                  <span className="hidden sm:block sm:pl-3">{category}</span>
-                </div>
-              </div>
+  const groups = [
+    {
+      name: "Appearance",
+      content: (
+        <>
+          <AppearanceControls />
+          <h3 className="mb-2 text-sm font-semibold">View preset</h3>
+          <div className="settings-choice-grid">
+            <Choice
+              active={activeView === "reader"}
+              title="Reader"
+              detail="Comfortable cards with room to read"
+              onClick={() => setView("reader")}
+            />
+            <Choice
+              active={activeView === "compact"}
+              title="Compact"
+              detail="Efficient rows for quick scanning"
+              onClick={() => setView("compact")}
+            />
+            <Choice
+              active={activeView === "gallery"}
+              title="Gallery"
+              detail="Media-first responsive grid"
+              onClick={() => setView("gallery")}
+            />
+          </div>
+          <div className="settings-stack">
+            {["compactLinkPics", "dimRead", "showAwardings", "showFlairs"].map(
+              toggleRow,
             )}
+          </div>
+        </>
+      ),
+    },
+    {
+      name: "Layout",
+      content: (
+        <>
+          <p className="mb-4 text-sm text-th-textLight">
+            Choose how an open post and its comments share the screen. Small
+            screens always use a focused, stacked view.
+          </p>
+          <div className="settings-choice-grid">
+            <Choice
+              active={layout === "auto"}
+              title="Auto"
+              detail="Adapt to the post and screen"
+              onClick={() => setLayout("auto")}
+            />
+            <Choice
+              active={layout === "stacked"}
+              title="Stacked"
+              detail="Comments below the post"
+              onClick={() => setLayout("stacked")}
+            />
+            <Choice
+              active={layout === "split"}
+              title="Split"
+              detail="Media and comments side by side"
+              onClick={() => setLayout("split")}
+            />
+          </div>
+          <details>
+            <summary className="py-3 cursor-pointer">
+              Advanced layout options
+            </summary>
+            <div className="flex items-center justify-between p-2">
+              <span>Feed columns</span>
+              <div className="w-28">
+                <ColumnCardOptions mode="columns" />
+              </div>
+            </div>
+            <div className="settings-stack">
+              {[
+                "uniformHeights",
+                "wideUI",
+                "postWideUI",
+                "preferSideBySide",
+                "disableSideBySide",
+              ].map(toggleRow)}
+            </div>
+          </details>
+        </>
+      ),
+    },
+    {
+      name: "Media",
+      content: (
+        <div className="settings-stack">
+          {[
+            "disableEmbeds",
+            "preferEmbeds",
+            "embedsEverywhere",
+            "expandImages",
+            "autoplay",
+            "hoverplay",
+            "audioOnHover",
+            "nsfw",
+          ].map(toggleRow)}
+        </div>
+      ),
+    },
+    {
+      name: "Comments",
+      content: (
+        <div className="settings-stack">
+          {[
+            "showUserIcons",
+            "showUserFlairs",
+            "autoCollapseComments",
+            "ribbonCollapseOnly",
+            "collapseChildrenOnly",
+            "defaultCollapseChildren",
+          ].map(toggleRow)}
+          <div className="flex items-center justify-between p-2">
+            <span>Default comment sorting</span>
+            <div className="min-w-[7rem]">
+              <DefaultSortSelector mode="comments" />
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      name: "Filters",
+      content: (
+        <div className="settings-stack">
+          {[
+            "self",
+            "links",
+            "images",
+            "videos",
+            "portrait",
+            "landscape",
+            "read",
+            "seen",
+          ].map((filter) => (
+            <ToggleFilters
+              key={filter}
+              filter={filter}
+              withSubtext
+              quickToggle
+            />
+          ))}
+          <FilterEntities />
+        </div>
+      ),
+    },
+    {
+      name: "Behavior",
+      content: (
+        <div className="settings-stack">
+          {["autoRead", "autoSeen", "infiniteLoading", "autoRefreshFeed"].map(
+            toggleRow,
+          )}
+          <IntInput setting="slowRefreshInterval" />
+          <IntInput setting="fastRefreshInterval" />
+          {["refreshOnFocus", "askToUpdateFeed", "autoRefreshComments"].map(
+            toggleRow,
+          )}
+        </div>
+      ),
+    },
+    { name: "History", content: <History /> },
+    {
+      name: "Data",
+      content: (
+        <>
+          <p className="text-sm opacity-70">
+            Download or restore preferences, local subscriptions, favorites, and
+            local collections. Accounts, tokens, browsing history, and caches
+            are never included.
+          </p>
+          <div className="settings-data-actions">
+            <button
+              className="settings-action"
+              type="button"
+              onClick={download}
+            >
+              Export backup
+            </button>
+            <button
+              className="settings-action"
+              type="button"
+              onClick={() => inputRef.current?.click()}
+            >
+              Import backup
+            </button>
+          </div>
+          <input
+            ref={inputRef}
+            className="hidden"
+            type="file"
+            accept="application/json,.json"
+            onChange={restore}
+          />
+          {status && (
+            <p className="settings-status" role="status" aria-live="polite">
+              {status}
+            </p>
+          )}
+        </>
+      ),
+    },
+  ];
+
+  return (
+    <Tab.Group as="div" className="settings-tabs">
+      <Tab.List className="settings-tablist" aria-label="Settings sections">
+        {groups.map(({ name }) => (
+          <Tab key={name} className="settings-tab">
+            {name}
           </Tab>
         ))}
       </Tab.List>
-      <Tab.Panels
-        className={
-          "border  shadow-md  rounded-lg rounded-l-none sm:rounded-l-lg p-2 pt-5   overflow-y-auto  flex-grow select-none outline-none" +
-          " scrollbar-thin scrollbar-thumb-th-scrollbar scrollbar-track-transparent scrollbar-thumb-rounded-full scrollbar-track-rounded-full bg-th-post border-th-border2"
-        }
-      >
-        {Object.keys(categories).map((category, i) => (
-          <div
-            ref={refs[category]}
-            key={category}
-            className={" sm:px-5  py-2 pt-6 "}
-          >
-            <h1 className="text-xl font-semibold ">{category}</h1>
-            {categories[category]?.settings?.map((setting) => (
-              <div key={setting}>{setting}</div>
-            ))}
-          </div>
+      <Tab.Panels>
+        {groups.map(({ name, content }) => (
+          <Tab.Panel key={name} className="settings-panel">
+            <h2 className="settings-panel-title">{name}</h2>
+            {content}
+          </Tab.Panel>
         ))}
       </Tab.Panels>
     </Tab.Group>

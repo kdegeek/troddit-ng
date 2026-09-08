@@ -584,10 +584,7 @@ const Thread = ({
                     <span className="flex flex-row flex-wrap items-center justify-start py-2 md:pl-3">
                       <a
                         className={" text-xl font-semibold mr-2"}
-                        href={
-                          `${post?.url}` ??
-                          `https://www.reddit.com${post?.permalink ?? ""}`
-                        }
+                        href={`${post?.url}`}
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -836,16 +833,20 @@ const Thread = ({
                           <SaveButton
                             id={post?.name}
                             saved={post?.saved}
+                            item={post?.name ? {
+                              id: post.name,
+                              title: post.title,
+                              permalink: post.permalink,
+                              subreddit: post.subreddit,
+                              author: post.author,
+                            } : undefined}
                             post={true}
                             isPortrait={usePortrait}
                             useKeys={true}
                           />
                         </div>
                         <a
-                          href={
-                            `${post?.url}` ??
-                            `https://www.reddit.com${post?.permalink ?? ""}`
-                          }
+                          href={`${post?.url}`}
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -1136,7 +1137,7 @@ const Thread = ({
                       {!(thread.data?.pages?.[0]?.comments?.length > 0) &&
                       thread.isFetched &&
                       !thread.isError ? (
-                        <span className="mt-8">{"no comments :("}</span>
+                        <span className="mt-8">No comments yet. Be the first to join the conversation.</span>
                       ) : null}
                     </span>
                     {/* Open All Comments */}

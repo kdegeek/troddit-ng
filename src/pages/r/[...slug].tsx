@@ -14,7 +14,6 @@ import {
 import ParseBodyHTML from "../../components/ParseBodyHTML";
 import Collection from "../../components/collections/Collection";
 import PostModal from "../../components/PostModal";
-import LoginModal from "../../components/LoginModal";
 import React from "react";
 import useThread from "../../hooks/useThread";
 import { findMediaInfo } from "../../../lib/utils";
@@ -72,7 +71,7 @@ const SubredditPage = ({ query, metaTags, post, postData }) => {
         (subsArray?.[0]?.toUpperCase() !== "ALL" &&
         subsArray?.[0]?.toUpperCase() !== "POPULAR"
           ? " -mt-2 "
-          : "") + " overflow-x-hidden overflow-y-auto "
+          : "") + " overflow-x-clip "
       }
     >
       <Head>
@@ -113,7 +112,7 @@ const SubredditPage = ({ query, metaTags, post, postData }) => {
         {subsArray?.[0]?.toUpperCase() !== "ALL" &&
         subsArray?.[0]?.toUpperCase() !== "POPULAR" &&
         subsArray?.length > 0 ? (
-          <div className="w-screen ">
+          <div className="w-full">
             <SubredditBanner subreddits={subsArray} userMode={false} />
           </div>
         ) : (
@@ -132,7 +131,6 @@ const SubredditPage = ({ query, metaTags, post, postData }) => {
           </div>
         ) : postThread ? (
           <div className="mt-10">
-            <LoginModal />
             <PostModal
               permalink={"/r/" + query?.slug.join("/")}
               returnRoute={query?.slug?.[0] ? `/r/${query?.slug[0]}` : "/"}

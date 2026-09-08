@@ -4,6 +4,7 @@ import useParseBodyHTML from "../hooks/useParseBodyHTML";
 import { useTheme } from "next-themes";
 import { ErrorBoundary } from "react-error-boundary";
 import { BsChevronCompactDown } from "react-icons/bs";
+import { isDarkPalette } from "../../lib/appearance";
 
 const scrollStyle =
   " scrollbar-thin scrollbar-thumb-th-scrollbar scrollbar-track-transparent scrollbar-thumb-rounded-full scrollbar-track-rounded-full ";
@@ -34,14 +35,12 @@ const PostBody = ({
   const component = useParseBodyHTML({ rawHTML, newTabLinks });
   const { theme, resolvedTheme } = useTheme();
   const ref = useRef<HTMLDivElement>(null);
-  const [heightLimited, setHeightLimited] = useState(
-    () => !!limitHeight ?? false
-  );
+  const [heightLimited, setHeightLimited] = useState(() => !!limitHeight);
   useEffect(() => {
     setHeightLimited(!!limitHeight);
   }, [limitHeight]);
   const [hiddenText, setHiddenText] = useState(false);
-  const [hideText, setHideText] = useState(() => !!limitHeight ?? false);
+  const [hideText, setHideText] = useState(() => !!limitHeight);
   useEffect(() => {
     let cRef = ref.current;
     const checkIsTextHidden = () => {
@@ -77,12 +76,12 @@ const PostBody = ({
             // }
           }} //alternate to single click fix
           className={
-            " relative prose inline-block prose-a:py-0  prose-headings:font-normal prose-p:my-0 prose-h1:text-xl   " +
+            " reading-body relative prose inline-block prose-a:py-0  prose-headings:font-normal prose-p:my-0 prose-h1:text-xl   " +
             " prose-strong:text-th-textStrong prose-headings:text-th-textHeading text-th-textBody  prose-a:break-all prose-pre:max-w-[90vw] prose-pre:md:max-w-lg prose-pre:lg:max-w-3xl  prose-pre:overflow-x-auto prose-table:max-w-[90vw] prose-table:md:max-w-lg prose-table:lg:max-w-full prose-table:overflow-x-auto break-words max-w-none prose-pre:ring-1 prose-pre:ring-th-border2 " +
             (withBG
               ? "rounded-lg bg-th-highlight ring-1 ring-th-border2 "
               : "") +
-            (resolvedTheme == "light" ? " " : " prose-invert  ") +
+            (isDarkPalette(resolvedTheme) ? " prose-invert " : " ") +
             (mode === "card"
               ? " prose-sm max-w-none w-full px-2 pr-4 py-1 "
               : mode === "expando"

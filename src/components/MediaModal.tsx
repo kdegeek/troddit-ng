@@ -548,6 +548,7 @@ const MediaModal = ({
                               <SaveButton
                                 id={post?.data?.name}
                                 saved={post?.data?.saved}
+                                item={{ id: post.data.name, title: post.data.title, permalink: post.data.permalink, subreddit: post.data.subreddit, author: post.data.author }}
                                 row={true}
                                 useKeys={true}
                               />
@@ -650,6 +651,7 @@ const MediaModal = ({
                         <SaveButton
                           id={post?.data?.name}
                           saved={post?.data?.saved}
+                          item={{ id: post.data.name, title: post.data.title, permalink: post.data.permalink, subreddit: post.data.subreddit, author: post.data.author }}
                           fullmedia={true}
                           useKeys={true}
                         />
@@ -825,6 +827,7 @@ const MediaModal = ({
                                 <SaveButton
                                   id={post?.data?.name}
                                   saved={post?.data?.saved}
+                                  item={{ id: post.data.name, title: post.data.title, permalink: post.data.permalink, subreddit: post.data.subreddit, author: post.data.author }}
                                   row={true}
                                   useKeys={true}
                                 />

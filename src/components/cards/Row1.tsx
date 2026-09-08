@@ -126,8 +126,7 @@ const Row1 = ({
             {/* Thumbnail */}
             <a
               href={
-                `${post?.url?.replace("reddit.com", "troddit.com")}` ??
-                `https://troddit.com${post?.permalink}`
+                post?.permalink ?? post?.url
               }
               target={"_blank"}
               rel="noreferrer"
@@ -402,6 +401,7 @@ const Row1 = ({
                   <SaveButton
                     id={post?.name}
                     saved={post?.saved}
+                    item={{ id: post.name, title: post.title, permalink: post.permalink, subreddit: post.subreddit, author: post.author }}
                     row={true}
                     isPortrait={false}
                   />
@@ -416,7 +416,7 @@ const Row1 = ({
                   />
                 </div>
                 <a
-                  href={`${post?.url}` ?? "https://troddit.com"}
+                  href={post?.url ?? post?.permalink}
                   target="_blank"
                   rel="noreferrer"
                 >

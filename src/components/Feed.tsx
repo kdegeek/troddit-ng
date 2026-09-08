@@ -1,106 +1,96 @@
-import React, { useEffect } from "react";
-
-import { useRouter } from "next/router";
-import { useMainContext } from "../MainContext";
-import LoginModal from "./LoginModal";
+import React from "react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { FiArrowUpRight, FiCompass, FiFeather, FiGrid } from "react-icons/fi";
 import { ErrorBoundary } from "react-error-boundary";
+import { useMainContext } from "../MainContext";
+import { useSubsContext } from "../MySubs";
 import useFeed from "../hooks/useFeed";
 import useRefresh from "../hooks/useRefresh";
-import { IoMdRefresh } from "react-icons/io";
-import ErrMessage from "./ErrMessage";
 import useLocation from "../hooks/useLocation";
-import toast from "react-hot-toast";
-import ToastCustom from "./toast/ToastCustom";
 import FeedMasonry from "./FeedMasonry";
+import FeedToolbar from "./FeedToolbar";
+import useReadingPreferences from "../hooks/useReadingPreferences";
+import { constructMultiLink } from "../../lib/navigation";
 
-const Feed = ({ initialData = {} as any }) => {
-  const { mode, subreddits } = useLocation();
-  const { key, feed } = useFeed({
-    initialPosts: initialData,
-  });
-  const { invalidateAll, invalidateKey, refreshCurrent, fetchingCount } =
-    useRefresh();
-
+export default function Feed({ initialData = {} as any }) {
+  const { mode, subreddits, userMode, searchQuery } = useLocation();
+  const { key, feed } = useFeed({ initialPosts: initialData });
+  const { invalidateAll, refreshCurrent } = useRefresh();
   const context: any = useMainContext();
-  const router = useRouter();
+  const subs: any = useSubsContext();
+  const { data: session } = useSession();
+  const collections = (session ? subs.myMultis : subs.myLocalMultis) ?? [];
+  const { view } = useReadingPreferences();
+  const title =
+    mode === "HOME"
+      ? "Your home feed"
+      : mode === "SEARCH"
+        ? `Results for “${searchQuery ?? ""}”`
+        : mode === "USER" || mode === "SELF"
+          ? `${subreddits}${userMode ? ` · ${userMode}` : ""}`
+          : subreddits?.toLowerCase() === "popular"
+            ? "Popular right now"
+            : subreddits?.toLowerCase() === "all"
+              ? "All of Reddit"
+              : `r/${subreddits ?? ""}`;
+  const description =
+    mode === "HOME"
+      ? "A little curiosity goes a long way. Make yourself at home."
+      : "Fresh perspectives, good conversations, and something worth your time.";
+  const hasPosts = feed.data?.pages?.some((page) => page.filtered?.length);
 
-  useEffect(() => {
-    if (
-      router.asPath?.substring(0, 3) === "/r/" &&
-      router.asPath.includes("/comments")
-    ) {
-      router.replace(router.asPath, undefined, { shallow: true });
-    }
-  }, []);
-
-  if (
-    feed.error &&
-    (mode === "USER" || mode === "SUBREDDIT") &&
-    subreddits &&
-    !feed?.data?.pages
-  ) {
-    toast.custom(
-      (t) => (
-        <ToastCustom
-          t={t}
-          message={`We couldn't find that ${
-            mode === "SUBREDDIT" ? "subreddit" : "user"
-          }. ${
-            mode === "SUBREDDIT" ? "It" : "They"
-          } may be banned or restricted.`}
-          mode={"alert"}
-          action={() => {
-            toast.remove("not_found");
-            router.replace(`/search?q=${subreddits}`);
-          }}
-          actionLabel={"Search Instead?"}
-        />
-      ),
-      { position: "bottom-center", duration: Infinity, id: "not_found" }
-    );
-  } else if (feed.error) {
-    toast.custom(
-      (t) => (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toast.remove("feed_error");
-          }}
-          className="max-w-lg p-2 border rounded-lg bg-th-postHover border-th-border2"
-        >
-          <p className="mb-2 text-center">{"Oops something went wrong :("}</p>
-
-          <ErrMessage />
-        </button>
-      ),
-      { position: "bottom-center", duration: Infinity, id: "feed_error" }
-    );
-  } else {
-    toast.remove("not_found");
-    toast.remove("feed_error");
-  }
   return (
-    <>
-      <LoginModal />
-      <div className="flex flex-col items-center flex-none w-screen pt-1">
+    <section className={`feed-page view-${view}`}>
+      <FeedToolbar
+        title={title}
+        description={description}
+        refreshing={feed.isFetching}
+        onRefresh={refreshCurrent}
+      />
+      <div className="feed-layout">
         <div
-          className={
-            "w-[98%] mx-auto " +
-            (context.columnOverride === 1 &&
-            context.cardStyle !== "row1" &&
-            !context.wideUI
-              ? " max-w-2xl "
-              : " md:w-11/12 ") +
-            (context.cardStyle === "row1"
-              ? " bg-th-post2 border-th-border2 rounded-t-md rounded-b-md border shadow-2xl min-h-screen "
-              : " ")
-          }
+          className={`feed-stream ${context.columnOverride === 1 && !context.wideUI ? "feed-narrow" : ""}`}
         >
-          <ErrorBoundary
-            FallbackComponent={ErrorFallback}
-            onReset={invalidateAll} //context.setForceRefresh((i) => i + 1)}
-          >
+          {feed.isError && (
+            <div className="feed-state" role="alert">
+              <FiCompass />
+              <h2>Couldn’t load this feed</h2>
+              <p>
+                Your place is saved. Try again when your connection is ready.
+              </p>
+              <button className="primary-button" onClick={() => feed.refetch()}>
+                Try again
+              </button>
+            </div>
+          )}
+          {!hasPosts && !feed.isError && feed.isFetching && (
+            <div
+              className="feed-skeletons"
+              role="status"
+              aria-label="Loading posts"
+            >
+              {[0, 1, 2].map((item) => (
+                <div className="post-skeleton" key={item}>
+                  <div />
+                  <div />
+                  <div />
+                  <div />
+                </div>
+              ))}
+            </div>
+          )}
+          {!hasPosts && feed.isFetched && !feed.isFetching && !feed.isError && (
+            <div className="feed-state">
+              <FiFeather />
+              <h2>A little quiet here</h2>
+              <p>Try another sort or adjust your filters to find more posts.</p>
+              <Link href="/subreddits" className="primary-button">
+                Explore communities
+              </Link>
+            </div>
+          )}
+          <ErrorBoundary FallbackComponent={FeedError} onReset={invalidateAll}>
             <FeedMasonry
               initItems={[]}
               feed={feed}
@@ -109,42 +99,76 @@ const Feed = ({ initialData = {} as any }) => {
             />
           </ErrorBoundary>
         </div>
+        <aside className="feed-aside" aria-label="Discover more">
+          <div className="discovery-card">
+            <span className="discovery-icon">
+              <FiCompass />
+            </span>
+            <p className="eyebrow">GO A LITTLE FURTHER</p>
+            <h2>
+              Find your kind
+              <br />
+              of interesting.
+            </h2>
+            <p>
+              Big ideas. Small obsessions. There’s a community for all of it.
+            </p>
+            <Link href="/subreddits">
+              Explore communities <FiArrowUpRight />
+            </Link>
+          </div>
+          <div className="collection-card">
+            <div className="aside-heading">
+              <h2>Your collections</h2>
+              <FiGrid />
+            </div>
+            {collections.slice(0, 4).map((multi) => (
+              <Link href={constructMultiLink(multi)} key={multi.data?.name}>
+                <span className="collection-initial">
+                  {multi.data?.name?.slice(0, 1)}
+                </span>
+                <span>
+                  <strong>
+                    {multi.data?.display_name ?? multi.data?.name}
+                  </strong>
+                  <small>
+                    {multi.data?.subreddits?.length ?? 0} communities
+                  </small>
+                </span>
+                <FiArrowUpRight />
+              </Link>
+            ))}
+            <Link className="manage-collections" href="/subreddits">
+              Make it your own <span>→</span>
+            </Link>
+          </div>
+          <div className="reader-note">
+            <FiFeather />
+            <p>
+              Less noise.
+              <br />
+              <strong>More of what you love.</strong>
+            </p>
+          </div>
+          <div className="aside-links">
+            <Link href="/about">About</Link>
+            <Link href="/settings">Preferences</Link>
+            <Link href="/changelog">What’s new</Link>
+          </div>
+        </aside>
       </div>
-      <button
-        aria-label="refresh"
-        disabled={feed.isFetching}
-        onClick={() => {
-          refreshCurrent();
-        }}
-        className={"hidden md:block fixed bottom-0 left-0"}
-      >
-        <IoMdRefresh
-          className={
-            (feed.isFetching && !feed.isFetchingNextPage
-              ? "animate-spin "
-              : " hover:scale-110 opacity-20 hover:opacity-100 ") + " w-6 h-6 "
-          }
-        />
-      </button>
-    </>
+    </section>
   );
-};
+}
 
-function ErrorFallback({ error, resetErrorBoundary }) {
+function FeedError({ resetErrorBoundary }: { resetErrorBoundary: () => void }) {
   return (
-    <div
-      className="flex flex-col items-center justify-center mb-auto"
-      role="alert"
-    >
-      <p className="text-center">Something went wrong</p>
-      <button
-        className="p-2 mb-2 border rounded-lg border-th-accent hover:bg-th-highlight"
-        onClick={resetErrorBoundary}
-      >
+    <div className="feed-state" role="alert">
+      <h2>This view needs a refresh</h2>
+      <p>Your preferences haven’t changed.</p>
+      <button className="primary-button" onClick={resetErrorBoundary}>
         Try again
       </button>
     </div>
   );
 }
-
-export default Feed;

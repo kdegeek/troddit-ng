@@ -386,6 +386,17 @@ export const MainProvider = ({ children }) => {
   };
 
   const [filtersApplied, setApplyFilters] = useState(0);
+  const resetContentFilters = () => {
+    setSeenFilter(true);
+    setReadFilter(true);
+    setImgFilter(true);
+    setVidFilter(true);
+    setSelfFilter(true);
+    setLinkFilter(true);
+    setImgPortraitFilter(true);
+    setImgLandScapeFilter(true);
+    applyFilters({ seenFilter: true, readFilter: true, imgFilter: true, vidFilter: true, selfFilter: true, linkFilter: true, imgPortraitFilter: true, imgLandscapeFilter: true });
+  };
   const applyFilters = (
     filters = {
       seenFilter,
@@ -649,7 +660,9 @@ export const MainProvider = ({ children }) => {
           let local_columnOverride = parseInt(
             localStorage.getItem("columnOverride")
           );
-          local_columnOverride > 0
+          Number.isNaN(local_columnOverride)
+            ? setColumnOverride(1)
+            : local_columnOverride > 0
             ? setColumnOverride(local_columnOverride)
             : setColumnOverride(0);
         }
@@ -1593,6 +1606,7 @@ export const MainProvider = ({ children }) => {
         loading,
         setLoading,
         toggleFilter,
+        resetContentFilters,
         seenFilter,
         readFilter,
         imgFilter,
@@ -1694,8 +1708,10 @@ export const MainProvider = ({ children }) => {
         autoHideNav,
         toggleAutoHideNav,
         disableSideBySide,
+        setDisableSideBySide,
         toggleDisableSideBySide,
         preferSideBySide,
+        setPreferSideBySide,
         togglePreferSideBySide,
         autoCollapseComments,
         toggleAutoCollapseComments,

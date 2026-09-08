@@ -1,17 +1,11 @@
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import SimpleDropDownSelector from "../ui/SimpleDropDownSelector";
+import { PALETTES } from "../../../lib/appearance";
 
 const THEMES = {
   system: { name: "system" },
-  light: { name: "light" },
-  dark: { name: "dark" },
-  abyss: { name: "abyss" },
-  black: { name: "black" },
-  dracula: { name: "dracula" },
-  nord: { name: "nord" },
-  ocean: { name: "ocean" },
-  palenight: { name: "palenight" },
+  ...Object.fromEntries(Object.entries(PALETTES).map(([key, p]) => [key, { name: p.name }])),
 };
 
 

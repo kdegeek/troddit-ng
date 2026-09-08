@@ -14,7 +14,7 @@ const MediaWrapper = ({
   forceMute,
   imgFull,
   postMode,
-  handleClick = () => {},
+  handleClick = (event?: React.MouseEvent, nav?: { toComments?: boolean; toMedia?: boolean }) => {},
   fullMediaMode = false,
   showCrossPost = true,
   showCrossPostMedia = true,

@@ -4,3 +4,8 @@ node_modules
 npm-debug.log
 README.md
 .next
+.git
+.amp
+.env
+.env.*
+!.env.example

@@ -1,7 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import "~react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 
 :root {
   --overflow: hidden visible;
@@ -271,6 +270,11 @@ html,
 body {
   max-width: 100%;
   overflow: var(--overflow);
+}
+/* Clip horizontal overflow without making body a competing scroll container.
+   The modal's --overflow: hidden hidden still locks vertical scrolling. */
+body {
+  overflow-x: clip;
 }
 .sticky-box {
   position: -webkit-sticky; /* for Safari */

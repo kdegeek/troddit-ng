@@ -7,6 +7,8 @@ import Row1 from "./cards/Row1";
 import CommentCard from "./cards/CommentCard";
 import { useRead } from "../hooks/useRead";
 import useCardHeightTrigger from "../hooks/useCardHeightTrigger";
+import ReaderCard from "./cards/ReaderCard";
+import { useMainContext } from "../MainContext";
 
 const Post = ({
   post,
@@ -23,6 +25,7 @@ const Post = ({
   initHeight = 0,
 }) => {
   const { data: session, status } = useSession();
+  const context: any = useMainContext();
   const router = useRouter();
   const postCardRef = useRef<HTMLDivElement>(null);
   const { read } = useRead(post?.data?.name);
@@ -117,6 +120,19 @@ const Post = ({
             data={post?.data}
             postNum={postNum}
             handleClick={handleClick}
+          />
+        ) : !context.mediaOnly ? (
+          <ReaderCard
+            post={post.data}
+            compact={cardStyle === "row1" || cardStyle === "card2"}
+            columns={columns}
+            hideNSFW={hideNSFW}
+            forceMute={forceMute}
+            read={read}
+            handleClick={handleClick}
+            origCommentCount={origCommentCount}
+            mediaDimensions={mediaDimensions}
+            checkCardHeight={checkCardHeight}
           />
         ) : cardStyle === "row1" ? (
           <Row1

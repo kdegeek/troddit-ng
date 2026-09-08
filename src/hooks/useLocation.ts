@@ -157,7 +157,11 @@ const useLocation = (params?) => {
       } else {
         setMode("NONE");
       }
-      setSort((query?.frontsort as string) ?? query?.sort ?? "hot");
+      const requestedSort = query?.frontsort ?? query?.sort;
+      setSort(
+        (Array.isArray(requestedSort) ? requestedSort[0] : requestedSort) ??
+          "hot"
+      );
       setRange((query?.t as string) ?? "");
     }
 

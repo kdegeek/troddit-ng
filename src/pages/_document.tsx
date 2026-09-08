@@ -1,5 +1,4 @@
 import Document, { Html, Head, Main, NextScript } from "next/document";
-import PlausibleProvider from "next-plausible";
 import React from "react";
 
 class MyDocument extends Document {
@@ -21,7 +20,7 @@ class MyDocument extends Document {
           <meta />
           <link rel="manifest" href="/manifest.json" />
           <link rel="apple-touch-icon" href="/icon-512.png"></link>
-          <meta name="theme-color" content="#384659" />
+          <meta name="theme-color" content="#287453" />
 
           <meta name="application-name" content="troddit" />
           <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -63,12 +62,10 @@ class MyDocument extends Document {
             content="https://troddit.com/icon-512.png"
           />
         </Head>
-        <PlausibleProvider domain="troddit.com">
-          <body className=" bg-th-base text-th-text">
+          <body>
             <Main />
             <NextScript />
           </body>
-        </PlausibleProvider>
       </Html>
     );
   }
