@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { FiDownload, FiWifiOff } from "react-icons/fi";
+import usePwaViewport from "../hooks/usePwaViewport";
 
 type InstallPrompt = Event & {
   prompt: () => Promise<void>;
@@ -8,6 +9,7 @@ type InstallPrompt = Event & {
 };
 
 export default function PwaStatus() {
+  usePwaViewport();
   const router = useRouter();
   const [online, setOnline] = useState(true);
   const [installPrompt, setInstallPrompt] = useState<InstallPrompt | null>(
@@ -17,6 +19,14 @@ export default function PwaStatus() {
   const [standalone, setStandalone] = useState(false);
   const [message, setMessage] = useState("");
   const [storage, setStorage] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [persistent, setPersistent] = useState<boolean | null>(null);
+  useEffect(() => {
+    navigator.storage
+      ?.persisted?.()
+      .then(setPersistent)
+      .catch(() => {});
+  }, []);
   useEffect(() => {
     let disposed = false;
     const cleanup: (() => void)[] = [];
@@ -39,29 +49,31 @@ export default function PwaStatus() {
     window.addEventListener("beforeinstallprompt", captureInstall);
     window.addEventListener("appinstalled", installed);
     if ("serviceWorker" in navigator)
-      navigator.serviceWorker.ready.then((registration) => {
-        if (disposed) return;
-        if (registration.waiting) setWaiting(registration.waiting);
-        const updateFound = () => {
-          const worker = registration.installing;
-          const stateChange = () => {
-            if (
-              worker?.state === "installed" &&
-              navigator.serviceWorker.controller
-            )
-              setWaiting(worker);
+      navigator.serviceWorker.ready
+        .then((registration) => {
+          if (disposed) return;
+          if (registration.waiting) setWaiting(registration.waiting);
+          const updateFound = () => {
+            const worker = registration.installing;
+            const stateChange = () => {
+              if (
+                worker?.state === "installed" &&
+                navigator.serviceWorker.controller
+              )
+                setWaiting(worker);
+            };
+            worker?.addEventListener("statechange", stateChange);
+            cleanup.push(() =>
+              worker?.removeEventListener("statechange", stateChange),
+            );
           };
-          worker?.addEventListener("statechange", stateChange);
+          registration.addEventListener("updatefound", updateFound);
+          if (registration.installing) updateFound();
           cleanup.push(() =>
-            worker?.removeEventListener("statechange", stateChange),
+            registration.removeEventListener("updatefound", updateFound),
           );
-        };
-        registration.addEventListener("updatefound", updateFound);
-        if (registration.installing) updateFound();
-        cleanup.push(() =>
-          registration.removeEventListener("updatefound", updateFound),
-        );
-      });
+        })
+        .catch(() => {});
     navigator.storage
       ?.estimate?.()
       .then((estimate) => {
@@ -97,7 +109,7 @@ export default function PwaStatus() {
   const install = async () => {
     if (!installPrompt) {
       setMessage(
-        "In Safari on iPhone or iPad, choose Share → Add to Home Screen. In a supported desktop browser, use the install option in the address bar or browser menu.",
+        "On iPhone or iPad, open Troddit in Safari, then Share (sometimes inside More …) → Add to Home Screen. Leave Open as Web App enabled if offered, then tap Add. Launch from the new icon. Other browsers may offer installation in their menu.",
       );
       return;
     }
@@ -107,6 +119,49 @@ export default function PwaStatus() {
       setInstallPrompt(null);
     } catch {
       setMessage("Use your browser’s menu to install Troddit.");
+    }
+  };
+  const checkUpdates = async () => {
+    setChecking(true);
+    try {
+      if (!navigator.onLine) throw new Error("offline");
+      const registration = await navigator.serviceWorker?.getRegistration();
+      if (!registration) {
+        setMessage(
+          "Offline support is not active. Visit over HTTPS and reload; private browsing or browser policy may prevent installation.",
+        );
+        return;
+      }
+      await registration.update();
+      if (registration.waiting) setWaiting(registration.waiting);
+      setMessage(
+        registration.waiting
+          ? "An update is ready. Choose Update now when you are ready to reload."
+          : registration.installing
+            ? "An update is downloading. You will be notified when it is ready."
+            : "Update check complete. No waiting update was found.",
+      );
+    } catch {
+      setMessage(
+        "Couldn’t check for updates. Check your connection and try again.",
+      );
+    } finally {
+      setChecking(false);
+    }
+  };
+  const protectStorage = async () => {
+    try {
+      const granted = await navigator.storage?.persist?.();
+      setPersistent(Boolean(granted));
+      setMessage(
+        granted
+          ? "Persistent storage granted. Clearing website data still removes local data; keep preference backups."
+          : "This browser did not grant persistent storage. Install to the Home Screen and keep preference backups. Troddit cannot prevent browser eviction.",
+      );
+    } catch {
+      setMessage(
+        "Storage protection is unavailable in this browser. Keep preference backups.",
+      );
     }
   };
   const clearAssets = async () => {
@@ -141,7 +196,8 @@ export default function PwaStatus() {
             <>
               <FiWifiOff />
               <span>
-                You’re offline. Your local preferences and drafts are safe.
+                You’re offline. Reddit content requires a connection; saved
+                local data stays on this device unless cleared by the browser.
               </span>
             </>
           ) : (
@@ -172,6 +228,18 @@ export default function PwaStatus() {
             <button className="settings-action" onClick={clearAssets}>
               Clear offline assets
             </button>
+            <button
+              className="settings-action"
+              onClick={checkUpdates}
+              disabled={checking || !online}
+            >
+              {checking ? "Checking…" : "Check for updates"}
+            </button>
+            {persistent !== null && !persistent && (
+              <button className="settings-action" onClick={protectStorage}>
+                Protect local storage
+              </button>
+            )}
             {waiting && (
               <button className="settings-action" onClick={activate}>
                 Update now
@@ -179,6 +247,16 @@ export default function PwaStatus() {
             )}
           </div>
           {storage && <p>{storage}</p>}
+          <p>
+            {standalone
+              ? "Running as an installed app. "
+              : "Running in a browser. "}
+            {persistent
+              ? "Persistent storage is enabled. "
+              : "Browser storage may be evicted. "}
+            Use Data → Export preferences for a backup. Bookmarks and drafts are
+            not included in that backup.
+          </p>
           {message && <p role="status">{message}</p>}
         </section>
       )}

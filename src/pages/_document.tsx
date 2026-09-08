@@ -17,9 +17,8 @@ class MyDocument extends Document {
           ></meta>
 
           <meta httpEquiv="Content-Type" content="text/html; charset=utf-8" />
-          <meta />
           <link rel="manifest" href="/manifest.json" />
-          <link rel="apple-touch-icon" href="/icon-512.png"></link>
+          <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
           <meta name="theme-color" content="#287453" />
 
           <meta name="application-name" content="troddit" />
@@ -29,7 +28,6 @@ class MyDocument extends Document {
             content="default"
           />
           <meta name="apple-mobile-web-app-title" content="troddit" />
-          <meta name="description" content="A web app for Reddit" />
           <meta name="format-detection" content="telephone=no" />
           <meta name="mobile-web-app-capable" content="yes" />
           {/* <meta
@@ -38,8 +36,6 @@ class MyDocument extends Document {
           /> */}
           <meta name="msapplication-TileColor" content="#384659" />
           <meta name="msapplication-tap-highlight" content="no" />
-
-          <link rel="apple-touch-icon" href="/icon-512.png" />
 
           <link rel="shortcut icon" href="/favicon.ico" />
 

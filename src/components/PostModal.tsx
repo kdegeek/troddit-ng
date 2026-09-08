@@ -472,7 +472,7 @@ const PostModal = ({
 
             <div
               className={
-                "fixed top-1 md:top-4 right-1.5 md:right-16 z-[98] " +
+                "media-options fixed top-1 md:top-4 right-1.5 md:right-16 z-[98] " +
                 " transition ease-in-out duration-200 "
               }
             >
@@ -525,7 +525,7 @@ const PostModal = ({
             "fixed z-[99]  md:bottom-auto  " +
             " outline-none select-none md:rounded-lg flex items-center justify-center  md:bg-transparent bg-black/40 rounded-full backdrop-blur-lg md:backdrop-blur-none md:hover:bg-black/20 w-10 h-10 md:w-12 md:h-12 flex-none text-white md:text-opacity-50 hover:text-opacity-100 cursor-pointer border border-transparent hover:border-th-borderHighlight hover:backdrop-blur-sm " +
             (useMediaMode
-              ? " md:top-4 md:right-2 md:left-auto left-1 top-1  " +
+              ? " media-back md:top-4 md:right-2 md:left-auto left-1 top-1  " +
                 (flattenedPosts?.[curPostNum]?.data?.mediaInfo?.isSelf
                   ? " text-white md:text-th-text "
                   : " text-white ") +

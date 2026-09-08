@@ -54,6 +54,7 @@ import { MdOutlineCompress, MdOutlineExpand } from "react-icons/md";
 import PostBody from "./PostBody";
 import { useTAuth } from "../PremiumAuthContext";
 import LoaderPuff from "./ui/LoaderPuff";
+import { sharePost } from "../../lib/share";
 
 const SIDEBYSIDE_THRESHOLD = 1000;
 
@@ -780,32 +781,11 @@ const Thread = ({
                             aria-label="share"
                             onClick={async (e) => {
                               e.preventDefault();
-                              const shareLink = `https://www.troddit.com/${
-                                post?.permalink?.split("/")?.[4]
-                              }`;
-                              const shareData = {
-                                title: `${post.title}`,
-                                text: `${post.title}`,
-                                url: `/${post?.permalink?.split("/")?.[4]}`,
-                              };
                               try {
-                                await navigator.share(shareData);
-                              } catch (err) {
-                                navigator.clipboard.writeText(shareLink);
-                                toast.custom(
-                                  (t) => (
-                                    <ToastCustom
-                                      t={t}
-                                      message={`Link Copied`}
-                                      mode={"success"}
-                                    />
-                                  ),
-                                  {
-                                    position: "bottom-center",
-                                    duration: 1000,
-                                    id: "thread_share",
-                                  }
-                                );
+                                const result = await sharePost(post.title, post.permalink, window.location.origin, navigator);
+                                if (result === "copied") toast.success("Link copied");
+                              } catch {
+                                toast.error("Couldn’t share or copy. Copy this page’s address from your browser instead.");
                               }
                             }}
                             className={

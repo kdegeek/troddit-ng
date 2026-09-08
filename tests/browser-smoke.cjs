@@ -80,15 +80,8 @@ try {
     "document.querySelector('a[href*=demo1]').scrollIntoView({block:'center'}); true",
   );
   run("wait", "300");
-  run(
-    "find",
-    "role",
-    "link",
-    "click",
-    "--name",
-    "What small change made your home feel more like you?",
-    "--exact",
-  );
+  run("focus", ".post-card-title a[href*=demo1]");
+  run("press", "Enter");
   wait("document.querySelector('[role=dialog]')");
   check(
     evaluate(
@@ -105,6 +98,14 @@ try {
     "Escape returns to feed and restores focus",
   );
   run("set", "viewport", "390", "844");
+  evaluate("document.documentElement.style.setProperty('--safe-top','59px'); document.querySelector('.post-comments[href*=demo1]').scrollIntoView({block:'center'}); true");
+  run("wait", "500");
+  run("find", "role", "link", "click", "--name", "43 comments", "--exact");
+  wait("document.querySelector('.post-detail')");
+  check(evaluate("document.querySelector('.post-detail').getBoundingClientRect().height === 844 && document.querySelector('.detail-back').getBoundingClientRect().top >= 59"), "Mobile thread fills the viewport and respects the notch");
+  run("press", "Escape");
+  wait("!document.querySelector('.post-detail')");
+  evaluate("document.documentElement.style.removeProperty('--safe-top'); true");
   evaluate("scrollTo(0,0); true");
   click("Search");
   wait("document.querySelector('[role=dialog] input')");

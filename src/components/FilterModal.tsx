@@ -28,7 +28,7 @@ const FilterModal = ({ toOpen }) => {
     <Transition.Root show={open} as={Fragment}>
       <Dialog
         as="div"
-        className="fixed inset-0 z-50 overflow-y-auto"
+        className="pwa-modal fixed inset-0 z-50 overflow-y-auto"
         initialFocus={cancelButtonRef}
         onClose={() => setOpen(false)}
       >

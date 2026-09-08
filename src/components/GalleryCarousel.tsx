@@ -176,10 +176,10 @@ const GalleryCarousel = ({
                     mediaMode
                       ? {
                           backgroundImage: `url(${image.src})`,
-                          height: "100vh",
+                          height: "100dvh",
                           width: "100vw",
-                          minHeight: "100vh",
-                          maxHeight: "100vh",
+                          minHeight: "100dvh",
+                          maxHeight: "100dvh",
                         }
                       : {
                           height: `${height}px`,

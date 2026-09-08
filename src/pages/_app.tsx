@@ -33,6 +33,7 @@ import LoginModal from "../components/LoginModal";
 import AppearanceProvider from "../components/AppearanceProvider";
 import { PALETTES } from "../../lib/appearance";
 import "../../styles/polish.css";
+import "../../styles/pwa.css";
 
 const NO_AUTH_FREE_ACCESS = JSON.parse(
   process?.env?.NEXT_PUBLIC_FREE_ACCESS ?? "true",

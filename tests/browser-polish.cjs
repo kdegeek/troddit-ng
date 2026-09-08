@@ -83,5 +83,12 @@ try {
   check("document.documentElement.scrollWidth <= innerWidth", "Mobile theme picker has no horizontal overflow");
   evaluate("document.querySelector('.reading-tuners').scrollIntoView({block:'center'}); true");
   check("document.documentElement.scrollWidth <= innerWidth", "Maximum mobile reading tuning has no horizontal overflow");
+  click("Search"); wait("document.querySelector('.search-dialog')");
+  check("getComputedStyle(document.querySelector('.search-dialog')).animationName === 'surface-arrive'", "Search uses a short entrance animation");
+  run("wait", "300");
+  check("getComputedStyle(document.querySelector('.search-dialog')).opacity === '1' && document.querySelector('.search-dialog').contains(document.activeElement)", "Search settles visibly with focus inside");
+  run("set", "media", "dark", "reduced-motion");
+  check("getComputedStyle(document.querySelector('.search-dialog')).animationName === 'none'", "Reduced motion disables decorative entrances");
+  run("press", "Escape"); wait("!document.querySelector('.search-dialog')");
   console.log(`${checks} polish browser checks passed`);
 } finally { run("close"); }

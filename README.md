@@ -107,6 +107,11 @@ The redirect uri should match the REDDIT_REDIRECT variable.
 
 ### Self-hosting and PWA
 
+See [iOS PWA compatibility and Liquid Glass](PWA.md) for the implementation audit,
+toolkit comparison, and required iOS 27 device acceptance checklist. Run
+`node tests/browser-pwa.cjs http://localhost:3000` for Chromium viewport/update checks;
+these do not certify behavior on iOS WebKit or replace real-device testing.
+
 Reader, Compact, and Gallery share the same persisted display preferences.
 Settings groups advanced controls by task and provides versioned JSON export/import
 for preferences and local collections (not credentials, drafts, or Reddit account data).

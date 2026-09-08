@@ -24,6 +24,14 @@
   "orientation": "any",
   "shortcuts": [
     {
+      "name": "Local bookmarks",
+      "url": "/bookmarks"
+    },
+    {
+      "name": "Settings",
+      "url": "/settings"
+    },
+    {
       "name": "Popular",
       "short_name": "Popular",
       "url": "/r/popular"
